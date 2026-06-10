@@ -446,6 +446,42 @@
       </div>
     </div>
 
+    <!-- Auto-start -->
+    <div class="section-title">⚡ Start automatically on boot</div>
+    <div class="checklist">
+      <div class="check-item">
+        <div class="check-icon">1️⃣</div>
+        <div class="check-text">
+          <strong>The app is already configured to auto-restart.</strong> The <code style="background:rgba(0,0,0,0.3);padding:2px 7px;border-radius:6px;font-family:'Courier New',monospace;font-size:0.85rem;color:#fde68a;">docker-compose.yml</code> file includes <code style="background:rgba(0,0,0,0.3);padding:2px 7px;border-radius:6px;font-family:'Courier New',monospace;font-size:0.85rem;color:#fde68a;">restart: unless-stopped</code> — once the app is running, Docker will bring it back automatically after any crash or reboot.
+        </div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">2️⃣</div>
+        <div class="check-text">
+          <strong>You just need Docker itself to start on login.</strong> Enable this once and you're done:
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+            <div class="note" style="margin-top:0;">
+              <strong>🪟 Windows &amp; 🍎 Mac</strong><br />
+              Open Docker Desktop → click the ⚙️ <strong>Settings</strong> cog → <strong>General</strong> → tick <strong>"Start Docker Desktop when you sign in"</strong>.
+            </div>
+            <div class="note" style="margin-top:0;">
+              <strong>🐧 Linux</strong> — Docker already runs as a background service. Just make sure it's enabled:<br />
+              <div class="code-block" style="margin-top:8px;">
+                <code>sudo systemctl enable docker</code>
+                <button class="copy-btn" onclick="copy(this, 'sudo systemctl enable docker')">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">✅</div>
+        <div class="check-text">
+          That's it. After a reboot, Chore Stars will be back up on its own — no terminal needed.
+        </div>
+      </div>
+    </div>
+
     <!-- Nuclear option -->
     <div class="section-title" style="color:#f87171;margin-top:48px;">☢️ Remove everything</div>
     <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.35);border-radius:20px;padding:24px;">
