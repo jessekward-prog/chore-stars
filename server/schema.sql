@@ -1,0 +1,57 @@
+CREATE TABLE IF NOT EXISTS kids (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  avatar_url TEXT,
+  color_from TEXT NOT NULL DEFAULT '#f472b6',
+  color_to TEXT NOT NULL DEFAULT '#a855f7',
+  tab_from TEXT NOT NULL DEFAULT '#e879f9',
+  tab_to TEXT NOT NULL DEFAULT '#9333ea',
+  sort_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS chores (
+  id SERIAL PRIMARY KEY,
+  emoji TEXT NOT NULL DEFAULT '⭐',
+  label TEXT NOT NULL,
+  color_from TEXT NOT NULL DEFAULT '#facc15',
+  color_to TEXT NOT NULL DEFAULT '#f97316',
+  checked_from TEXT NOT NULL DEFAULT '#b45309',
+  checked_to TEXT NOT NULL DEFAULT '#c2410c',
+  check_color TEXT NOT NULL DEFAULT '#ea580c',
+  sort_order INT NOT NULL DEFAULT 0,
+  active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS prizes (
+  id SERIAL PRIMARY KEY,
+  label TEXT NOT NULL DEFAULT '???',
+  color TEXT NOT NULL DEFAULT '#FF6B6B',
+  dark_color TEXT NOT NULL DEFAULT '#c0392b',
+  sort_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS daily_checks (
+  id SERIAL PRIMARY KEY,
+  kid_id INT REFERENCES kids(id) ON DELETE CASCADE,
+  chore_id INT REFERENCES chores(id) ON DELETE CASCADE,
+  check_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  UNIQUE(kid_id, chore_id, check_date)
+);
+
+CREATE TABLE IF NOT EXISTS completed_days (
+  id SERIAL PRIMARY KEY,
+  day_key TEXT NOT NULL,
+  week_start DATE NOT NULL,
+  UNIQUE(day_key, week_start)
+);
+
+CREATE TABLE IF NOT EXISTS wheel_spins (
+  id SERIAL PRIMARY KEY,
+  week_start DATE NOT NULL UNIQUE,
+  spun_at TIMESTAMP DEFAULT NOW()
+);

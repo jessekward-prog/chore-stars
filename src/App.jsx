@@ -1,163 +1,85 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ChoreItem from './components/ChoreItem'
 import WeekTracker from './components/WeekTracker'
 import DayCompleteModal from './components/DayCompleteModal'
 import AllDoneModal from './components/AllDoneModal'
 import { playAllDone } from './utils/sounds'
-
-const CHORES = [
-  {
-    id: 'wake',
-    emoji: '🌞',
-    label: 'Wake Up & Stretch',
-    bg: 'bg-gradient-to-r from-yellow-400 to-orange-400',
-    checkedBg: 'bg-gradient-to-r from-yellow-600 to-orange-600',
-    checkColor: '#ea580c',
-  },
-  {
-    id: 'dress',
-    emoji: '👕',
-    label: 'Get Dressed',
-    bg: 'bg-gradient-to-r from-violet-400 to-fuchsia-500',
-    checkedBg: 'bg-gradient-to-r from-violet-700 to-fuchsia-700',
-    checkColor: '#7c3aed',
-  },
-  {
-    id: 'breakfast',
-    emoji: '🥣',
-    label: 'Eat Breakfast',
-    bg: 'bg-gradient-to-r from-emerald-400 to-teal-400',
-    checkedBg: 'bg-gradient-to-r from-emerald-700 to-teal-700',
-    checkColor: '#047857',
-  },
-  {
-    id: 'teeth',
-    emoji: '🦷',
-    label: 'Brush Teeth',
-    bg: 'bg-gradient-to-r from-sky-400 to-cyan-400',
-    checkedBg: 'bg-gradient-to-r from-sky-700 to-cyan-700',
-    checkColor: '#0369a1',
-  },
-  {
-    id: 'bed',
-    emoji: '🛏️',
-    label: 'Make Your Bed',
-    bg: 'bg-gradient-to-r from-pink-400 to-rose-400',
-    checkedBg: 'bg-gradient-to-r from-pink-700 to-rose-700',
-    checkColor: '#be185d',
-  },
-  {
-    id: 'bag',
-    emoji: '🎒',
-    label: 'Pack Your Bag',
-    bg: 'bg-gradient-to-r from-orange-400 to-red-500',
-    checkedBg: 'bg-gradient-to-r from-orange-700 to-red-700',
-    checkColor: '#b91c1c',
-  },
-]
-
-const KIDS = [
-  { id: 'peyton', name: 'Peyton', avatar: '👧', color: 'from-pink-500 to-purple-600', tab: 'from-fuchsia-500 to-purple-600' },
-  { id: 'jude',   name: 'Jude',   avatar: '👦', color: 'from-blue-500 to-cyan-500',   tab: 'from-blue-500 to-cyan-500'   },
-]
+import * as api from './api.js'
 
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri']
-const STORAGE_KEY = 'chore-chart-v3'
-
-function getWeekStart() {
-  const d = new Date()
-  const day = d.getDay() // 0=Sun
-  const diff = day === 0 ? -6 : 1 - day
-  const mon = new Date(d)
-  mon.setDate(d.getDate() + diff)
-  mon.setHours(0, 0, 0, 0)
-  return mon.toDateString()
-}
 
 function getTodayKey() {
   return ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date().getDay()]
 }
 
-function loadState() {
-  try {
-    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-    const today = new Date().toDateString()
-    const thisWeek = getWeekStart()
-    return {
-      peyton: s.date === today ? (s.peyton || []) : [],
-      jude:   s.date === today ? (s.jude   || []) : [],
-      completedDays: s.weekStart === thisWeek ? new Set(s.completedDays || []) : new Set(),
-      wheelSpun:     s.weekStart === thisWeek ? (s.wheelSpun || false) : false,
-    }
-  } catch {
-    return { peyton: [], jude: [], completedDays: new Set(), wheelSpun: false }
-  }
-}
+export default function App({ state, toggle, markDayComplete, markWheelSpun, refresh, onOpenParent }) {
+  const { kids, chores, prizes, checked, completedDays, wheelSpun } = state
 
-export default function App() {
-  const [activeKid, setActiveKid] = useState('peyton')
-  const initial = loadState()
-  const [checked, setChecked] = useState({
-    peyton: new Set(initial.peyton),
-    jude:   new Set(initial.jude),
-  })
-  const [completedDays, setCompletedDays] = useState(initial.completedDays)
-  const [wheelSpun, setWheelSpun] = useState(initial.wheelSpun)
+  const [activeKidId, setActiveKidId] = useState(kids[0]?.id ?? null)
   const [showDayModal, setShowDayModal] = useState(false)
   const [showWheelModal, setShowWheelModal] = useState(false)
   const [direction, setDirection] = useState(1)
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      date: new Date().toDateString(),
-      weekStart: getWeekStart(),
-      peyton: [...checked.peyton],
-      jude:   [...checked.jude],
-      completedDays: [...completedDays],
-      wheelSpun,
-    }))
-  }, [checked, completedDays, wheelSpun])
 
   const todayKey = getTodayKey()
   const isWeekday = WEEKDAYS.includes(todayKey)
   const canSpin = completedDays.size === 5 && !wheelSpun
 
-  const toggle = (kid, choreId) => {
-    const newSet = new Set(checked[kid])
-    if (newSet.has(choreId)) {
-      newSet.delete(choreId)
-      setChecked({ ...checked, [kid]: newSet })
-    } else {
-      newSet.add(choreId)
-      const other = kid === 'peyton' ? 'jude' : 'peyton'
-      const bothDone = newSet.size === CHORES.length && checked[other].size === CHORES.length
-      if (bothDone && isWeekday && !completedDays.has(todayKey)) {
-        const newDays = new Set(completedDays)
-        newDays.add(todayKey)
-        setCompletedDays(newDays)
-        setChecked({ ...checked, [kid]: newSet })
+  const handleToggle = (kidId, choreId) => {
+    const currentSet = checked.get(kidId) || new Set()
+    const willCheck = !currentSet.has(choreId)
+
+    if (willCheck) {
+      const futureSet = new Set(currentSet)
+      futureSet.add(choreId)
+      const wouldBothDone = futureSet.size === chores.length &&
+        kids.every(k => k.id === kidId || (checked.get(k.id)?.size ?? 0) === chores.length)
+
+      if (wouldBothDone && isWeekday && !completedDays.has(todayKey)) {
+        toggle(kidId, choreId)
+        markDayComplete(todayKey)
         setTimeout(() => { playAllDone(); setShowDayModal(true) }, 400)
-      } else {
-        setChecked({ ...checked, [kid]: newSet })
+        return
       }
     }
+
+    toggle(kidId, choreId)
   }
 
-  const resetDay = () => setChecked({ peyton: new Set(), jude: new Set() })
+  const resetDay = async () => {
+    await api.resetDay()
+    refresh()
+  }
 
   const switchKid = (kidId) => {
-    const ci = KIDS.findIndex(k => k.id === activeKid)
-    const ni = KIDS.findIndex(k => k.id === kidId)
+    const ci = kids.findIndex(k => k.id === activeKidId)
+    const ni = kids.findIndex(k => k.id === kidId)
     setDirection(ni > ci ? 1 : -1)
-    setActiveKid(kidId)
+    setActiveKidId(kidId)
   }
 
-  const kid = KIDS.find(k => k.id === activeKid)
-  const kidChecked = checked[activeKid]
+  if (!kids.length) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-8 text-center"
+        style={{ background: 'linear-gradient(160deg, #0f0524 0%, #1a0a3d 40%, #0d1a3d 100%)', fontFamily: "'Nunito', sans-serif" }}>
+        <div className="text-5xl mb-4">👨‍👩‍👧‍👦</div>
+        <div className="text-white text-xl font-black mb-4" style={{ fontFamily: "'Fredoka One', cursive" }}>
+          No kids added yet
+        </div>
+        <button onClick={onOpenParent}
+          className="px-8 py-3 rounded-2xl text-white font-black"
+          style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', fontFamily: "'Fredoka One', cursive" }}>
+          Open Parent Settings
+        </button>
+      </div>
+    )
+  }
+
+  const kid = kids.find(k => k.id === activeKidId) || kids[0]
+  const kidChecked = checked.get(kid.id) || new Set()
   const progress = kidChecked.size
-  const total = CHORES.length
-  const pct = Math.round((progress / total) * 100)
+  const total = chores.length
+  const pct = total > 0 ? Math.round((progress / total) * 100) : 0
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
   return (
@@ -178,14 +100,22 @@ export default function App() {
 
       {/* Header */}
       <div className="relative z-10 text-center pt-6 pb-1 px-4">
-        <motion.div
-          className="text-white text-4xl tracking-wide"
-          style={{ fontFamily: "'Fredoka One', cursive", textShadow: '0 0 24px rgba(200,100,255,0.7)' }}
-          animate={{ scale: [1, 1.02, 1] }}
-          transition={{ duration: 3, repeat: Infinity }}
-        >
-          ⭐ Chore Stars ⭐
-        </motion.div>
+        <div className="flex items-center justify-center relative">
+          <motion.div
+            className="text-white text-4xl tracking-wide"
+            style={{ fontFamily: "'Fredoka One', cursive", textShadow: '0 0 24px rgba(200,100,255,0.7)' }}
+            animate={{ scale: [1, 1.02, 1] }}
+            transition={{ duration: 3, repeat: Infinity }}
+          >
+            ⭐ Chore Stars ⭐
+          </motion.div>
+          {/* Parent settings lock */}
+          <button onClick={onOpenParent}
+            className="absolute right-0 text-white/30 hover:text-white/70 text-xl transition-colors"
+            style={{ lineHeight: 1 }}>
+            🔒
+          </button>
+        </div>
         <div className="text-white/50 text-sm mt-1 font-bold">{today}</div>
       </div>
 
@@ -206,22 +136,12 @@ export default function App() {
           />
         </div>
 
-        {/* Spin button if unlocked */}
         {canSpin && (
           <motion.button
             onClick={() => setShowWheelModal(true)}
             className="w-full mt-2 py-3 rounded-2xl text-white text-xl"
-            style={{
-              fontFamily: "'Fredoka One', cursive",
-              background: 'linear-gradient(135deg, #FFD700, #FF6347)',
-            }}
-            animate={{
-              boxShadow: [
-                '0 0 12px rgba(255,200,0,0.4)',
-                '0 0 32px rgba(255,200,0,0.9)',
-                '0 0 12px rgba(255,200,0,0.4)',
-              ],
-            }}
+            style={{ fontFamily: "'Fredoka One', cursive", background: 'linear-gradient(135deg, #FFD700, #FF6347)' }}
+            animate={{ boxShadow: ['0 0 12px rgba(255,200,0,0.4)', '0 0 32px rgba(255,200,0,0.9)', '0 0 12px rgba(255,200,0,0.4)'] }}
             transition={{ duration: 1.2, repeat: Infinity }}
             whileTap={{ scale: 0.96 }}
           >
@@ -232,27 +152,26 @@ export default function App() {
 
       {/* Kid tabs */}
       <div className="relative z-10 flex gap-3 px-4 pt-3 pb-1">
-        {KIDS.map((k) => {
-          const isActive = k.id === activeKid
-          const kidDone = checked[k.id].size === CHORES.length
+        {kids.map((k) => {
+          const isActive = k.id === activeKidId
+          const kidDone = (checked.get(k.id)?.size ?? 0) === chores.length && chores.length > 0
           return (
             <motion.button
               key={k.id}
               onClick={() => switchKid(k.id)}
-              className={`flex-1 py-3 rounded-2xl text-xl flex items-center justify-center gap-2 ${
-                isActive ? `bg-gradient-to-r ${k.tab} text-white shadow-lg` : 'bg-white/10 text-white/50'
-              }`}
+              className="flex-1 py-3 rounded-2xl text-xl flex items-center justify-center gap-2"
+              style={isActive
+                ? { background: `linear-gradient(to right, ${k.tab_from}, ${k.tab_to})`, color: 'white', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }
+                : { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }
+              }
               whileTap={{ scale: 0.95 }}
-              style={{ fontFamily: "'Fredoka One', cursive" }}
             >
-              <span className="text-2xl">{kidDone ? '🏆' : k.avatar}</span>
-              {k.name}
+              <KidAvatar kid={k} size={28} />
+              <span style={{ fontFamily: "'Fredoka One', cursive" }}>{k.name}</span>
               {kidDone && (
-                <motion.span
-                  animate={{ rotate: [0, 20, -20, 0], scale: [1, 1.3, 1] }}
+                <motion.span animate={{ rotate: [0, 20, -20, 0], scale: [1, 1.3, 1] }}
                   transition={{ duration: 1, repeat: Infinity, repeatDelay: 1 }}
-                  className="text-yellow-300"
-                >✓</motion.span>
+                  className="text-yellow-300">✓</motion.span>
               )}
             </motion.button>
           )
@@ -263,31 +182,31 @@ export default function App() {
       <div className="relative z-10 flex-1 px-4 pb-6">
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeKid}
+            key={kid.id}
             initial={{ x: direction * 60, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: direction * -60, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
           >
             {/* Kid header card */}
-            <div className={`rounded-3xl bg-gradient-to-br ${kid.color} p-4 mb-4 mt-2`}
-              style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+            <div
+              className="rounded-3xl p-4 mb-4 mt-2"
+              style={{ background: `linear-gradient(135deg, ${kid.color_from}, ${kid.color_to})`, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+            >
               <div className="flex items-center gap-3 mb-3">
-                <motion.span className="text-5xl"
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}>
-                  {kid.avatar}
-                </motion.span>
+                <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}>
+                  <KidAvatar kid={kid} size={52} />
+                </motion.div>
                 <div>
                   <div className="text-white text-2xl" style={{ fontFamily: "'Fredoka One', cursive" }}>
                     {kid.name}'s Chores
                   </div>
                   <div className="text-white/70 text-sm font-bold">
-                    {progress} of {total} done{progress === total ? ' 🎉' : ''}
+                    {progress} of {total} done{progress === total && total > 0 ? ' 🎉' : ''}
                   </div>
                 </div>
                 <div className="ml-auto flex gap-1 flex-wrap justify-end" style={{ maxWidth: 80 }}>
-                  {CHORES.map((_, i) => (
+                  {chores.map((_, i) => (
                     <motion.div key={i}
                       className={`w-3 h-3 rounded-full ${i < progress ? 'bg-yellow-300' : 'bg-white/25'}`}
                       animate={i < progress ? { scale: [1, 1.4, 1] } : {}}
@@ -314,7 +233,7 @@ export default function App() {
 
             {/* Chore list */}
             <div className="flex flex-col gap-3">
-              {CHORES.map((chore, i) => (
+              {chores.map((chore, i) => (
                 <motion.div key={chore.id}
                   initial={{ x: -30, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -323,7 +242,7 @@ export default function App() {
                   <ChoreItem
                     chore={chore}
                     checked={kidChecked.has(chore.id)}
-                    onToggle={() => toggle(activeKid, chore.id)}
+                    onToggle={() => handleToggle(kid.id, chore.id)}
                   />
                 </motion.div>
               ))}
@@ -347,6 +266,7 @@ export default function App() {
             key="day"
             todayKey={todayKey}
             completedDays={completedDays}
+            kids={kids}
             onClose={() => setShowDayModal(false)}
             onSpinWheel={() => { setShowDayModal(false); setTimeout(() => setShowWheelModal(true), 300) }}
           />
@@ -354,10 +274,32 @@ export default function App() {
         {showWheelModal && (
           <AllDoneModal
             key="wheel"
-            onClose={() => { setShowWheelModal(false); setWheelSpun(true) }}
+            sections={prizes}
+            kids={kids}
+            onClose={() => { setShowWheelModal(false); markWheelSpun() }}
           />
         )}
       </AnimatePresence>
     </div>
   )
+}
+
+function KidAvatar({ kid, size }) {
+  const style = {
+    width: size,
+    height: size,
+    borderRadius: size * 0.3,
+    overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: size * 0.55,
+    fontWeight: 900,
+    color: 'white',
+    flexShrink: 0,
+  }
+  if (kid.avatar_url) {
+    return <div style={style}><img src={kid.avatar_url} alt={kid.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
+  }
+  return <div style={{ ...style, background: `linear-gradient(135deg, ${kid.color_from}, ${kid.color_to})` }}>{kid.name[0]}</div>
 }

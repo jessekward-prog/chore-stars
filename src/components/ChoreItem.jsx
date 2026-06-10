@@ -13,9 +13,7 @@ export default function ChoreItem({ chore, checked, onToggle }) {
     if (!checked) {
       playCheck()
       const rect = btnRef.current?.getBoundingClientRect()
-      if (rect) {
-        fireChoreConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2)
-      }
+      if (rect) fireChoreConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2)
       const newParticles = Array.from({ length: 6 }, (_, i) => ({
         id: Date.now() + i,
         symbol: STARS[Math.floor(Math.random() * STARS.length)],
@@ -29,25 +27,26 @@ export default function ChoreItem({ chore, checked, onToggle }) {
     onToggle()
   }
 
+  const bgStyle = checked
+    ? { background: `linear-gradient(to right, ${chore.checked_from}, ${chore.checked_to})` }
+    : { background: `linear-gradient(to right, ${chore.color_from}, ${chore.color_to})` }
+
   return (
     <div className="relative">
       <motion.button
         ref={btnRef}
         onClick={handleClick}
-        className={`
-          w-full flex items-center gap-4 px-5 py-4 rounded-3xl font-nunito font-black text-xl
-          shadow-lg border-4 transition-all duration-200 relative overflow-hidden
-          ${checked
-            ? `${chore.checkedBg} border-white/40 opacity-80`
-            : `${chore.bg} border-white/60 hover:border-white`
-          }
-        `}
+        className="w-full flex items-center gap-4 px-5 py-4 rounded-3xl font-nunito font-black text-xl shadow-lg border-4 relative overflow-hidden"
+        style={{
+          ...bgStyle,
+          borderColor: checked ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.6)',
+          opacity: checked ? 0.85 : 1,
+          WebkitTapHighlightColor: 'transparent',
+        }}
         whileTap={{ scale: 0.93 }}
         animate={checked ? { scale: [1, 1.08, 1] } : {}}
         transition={{ duration: 0.25, type: 'spring', stiffness: 400 }}
-        style={{ WebkitTapHighlightColor: 'transparent' }}
       >
-        {/* Shimmer on unchecked */}
         {!checked && (
           <motion.div
             className="absolute inset-0 bg-white/20 rounded-3xl"
@@ -56,7 +55,6 @@ export default function ChoreItem({ chore, checked, onToggle }) {
           />
         )}
 
-        {/* Emoji */}
         <motion.span
           className="text-4xl relative z-10 flex-shrink-0"
           animate={checked ? { rotate: [0, -10, 10, 0], scale: [1, 1.3, 1] } : {}}
@@ -65,16 +63,14 @@ export default function ChoreItem({ chore, checked, onToggle }) {
           {chore.emoji}
         </motion.span>
 
-        {/* Label */}
         <span className="flex-1 text-left text-white drop-shadow-md relative z-10 tracking-wide">
           {chore.label}
         </span>
 
-        {/* Check circle */}
-        <div className={`
-          w-10 h-10 rounded-full border-4 flex items-center justify-center flex-shrink-0 relative z-10
-          ${checked ? 'bg-white border-white' : 'border-white/60 bg-white/10'}
-        `}>
+        <div
+          className="w-10 h-10 rounded-full border-4 flex items-center justify-center flex-shrink-0 relative z-10"
+          style={{ background: checked ? 'white' : 'rgba(255,255,255,0.1)', borderColor: checked ? 'white' : 'rgba(255,255,255,0.6)' }}
+        >
           <AnimatePresence>
             {checked && (
               <motion.span
@@ -84,7 +80,7 @@ export default function ChoreItem({ chore, checked, onToggle }) {
                 exit={{ scale: 0 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 20 }}
                 className="text-lg leading-none"
-                style={{ color: chore.checkColor }}
+                style={{ color: chore.check_color }}
               >
                 ✓
               </motion.span>
@@ -93,7 +89,6 @@ export default function ChoreItem({ chore, checked, onToggle }) {
         </div>
       </motion.button>
 
-      {/* Floating star particles */}
       <AnimatePresence>
         {particles.map((p) => (
           <motion.span

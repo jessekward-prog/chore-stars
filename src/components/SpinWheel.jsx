@@ -14,16 +14,6 @@ function scheduleTicks(durationMs) {
   doTick()
 }
 
-export const SECTIONS = [
-  { label: '???', color: '#FF6B6B', dark: '#c0392b' },
-  { label: '???', color: '#FFD93D', dark: '#d4a017' },
-  { label: '???', color: '#6BCB77', dark: '#27ae60' },
-  { label: '???', color: '#4D96FF', dark: '#1a6fc4' },
-  { label: '???', color: '#C77DFF', dark: '#8e44ad' },
-]
-
-const NUM = SECTIONS.length
-const SLICE = 360 / NUM
 const toRad = (d) => (d * Math.PI) / 180
 
 function sectorPath(cx, cy, r, start, end) {
@@ -34,14 +24,17 @@ function sectorPath(cx, cy, r, start, end) {
   return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 0,1 ${x2},${y2} Z`
 }
 
-export default function SpinWheel({ onResult }) {
+export default function SpinWheel({ sections, onResult }) {
   const [cumulative, setCumulative] = useState(0)
   const [spinning, setSpinning] = useState(false)
   const [winner, setWinner] = useState(null)
   const controls = useAnimation()
 
+  const NUM = sections.length
+  const SLICE = NUM > 0 ? 360 / NUM : 360
+
   const handleSpin = async () => {
-    if (spinning || winner !== null) return
+    if (spinning || winner !== null || NUM === 0) return
     setSpinning(true)
 
     const extraSpins = 7 + Math.floor(Math.random() * 5)
@@ -66,38 +59,23 @@ export default function SpinWheel({ onResult }) {
     onResult(idx)
   }
 
-  const cx = 140
-  const cy = 140
-  const r = 124
+  const cx = 140, cy = 140, r = 124
 
   return (
     <div className="flex flex-col items-center">
-      {/* Fixed pointer triangle */}
-      <motion.div
-        className="z-10"
-        style={{ marginBottom: -10 }}
+      <motion.div className="z-10" style={{ marginBottom: -10 }}
         animate={spinning ? { y: [0, 4, 0] } : { y: 0 }}
-        transition={{ duration: 0.3, repeat: spinning ? Infinity : 0 }}
-      >
+        transition={{ duration: 0.3, repeat: spinning ? Infinity : 0 }}>
         <svg width={32} height={26}>
-          <polygon
-            points="16,26 0,0 32,0"
-            fill="#FFD700"
-            style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))' }}
-          />
+          <polygon points="16,26 0,0 32,0" fill="#FFD700"
+            style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))' }} />
         </svg>
       </motion.div>
 
-      {/* Wheel */}
       <div style={{ borderRadius: '50%', boxShadow: '0 0 0 5px rgba(255,255,255,0.15), 0 12px 40px rgba(0,0,0,0.5)' }}>
-        <motion.svg
-          width={280}
-          height={280}
-          animate={controls}
-          style={{ display: 'block', originX: '50%', originY: '50%' }}
-        >
-          {/* Sections */}
-          {SECTIONS.map((sec, i) => {
+        <motion.svg width={280} height={280} animate={controls}
+          style={{ display: 'block', originX: '50%', originY: '50%' }}>
+          {sections.map((sec, i) => {
             const start = i * SLICE
             const end = (i + 1) * SLICE
             const mid = start + SLICE / 2
@@ -105,100 +83,53 @@ export default function SpinWheel({ onResult }) {
             const tx = cx + tr * Math.sin(toRad(mid))
             const ty = cy - tr * Math.cos(toRad(mid))
             const isWin = winner === i
-
             return (
-              <g key={i}>
-                <path
-                  d={sectorPath(cx, cy, r, start, end)}
-                  fill={isWin ? sec.dark : sec.color}
-                  stroke="white"
-                  strokeWidth={3}
-                />
-                {/* Label, rotated to point outward from center */}
+              <g key={sec.id ?? i}>
+                <path d={sectorPath(cx, cy, r, start, end)}
+                  fill={isWin ? sec.dark_color : sec.color}
+                  stroke="white" strokeWidth={3} />
                 <g transform={`translate(${tx},${ty}) rotate(${mid})`}>
-                  <text
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize={20}
-                    fontWeight="bold"
-                    fontFamily="'Fredoka One', cursive"
-                    fill="white"
-                    style={{ userSelect: 'none', pointerEvents: 'none' }}
-                  >
+                  <text textAnchor="middle" dominantBaseline="middle" fontSize={18} fontWeight="bold"
+                    fontFamily="'Fredoka One', cursive" fill="white"
+                    style={{ userSelect: 'none', pointerEvents: 'none' }}>
                     {sec.label}
                   </text>
                 </g>
               </g>
             )
           })}
-
-          {/* Outer border ring */}
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="white" strokeWidth={4} />
-
-          {/* Center hub */}
           <circle cx={cx} cy={cy} r={20} fill="white" stroke="rgba(0,0,0,0.1)" strokeWidth={2} />
-          <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fontSize={18}>
-            ⭐
-          </text>
+          <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fontSize={18}>⭐</text>
         </motion.svg>
       </div>
 
-      {/* Spin button */}
       {winner === null && (
-        <motion.button
-          onClick={handleSpin}
-          disabled={spinning}
+        <motion.button onClick={handleSpin} disabled={spinning}
           className="mt-6 px-12 py-4 rounded-full text-2xl text-white shadow-2xl"
           style={{
             fontFamily: "'Fredoka One', cursive",
-            background: spinning
-              ? '#555'
-              : 'linear-gradient(135deg, #FFD700 0%, #FF6347 100%)',
+            background: spinning ? '#555' : 'linear-gradient(135deg, #FFD700 0%, #FF6347 100%)',
             cursor: spinning ? 'not-allowed' : 'pointer',
           }}
           whileTap={!spinning ? { scale: 0.9 } : {}}
-          animate={
-            !spinning
-              ? {
-                  boxShadow: [
-                    '0 0 16px rgba(255,200,0,0.4)',
-                    '0 0 40px rgba(255,200,0,1.0)',
-                    '0 0 16px rgba(255,200,0,0.4)',
-                  ],
-                }
-              : { boxShadow: '0 0 0px rgba(0,0,0,0)' }
-          }
-          transition={{ duration: 1.2, repeat: Infinity }}
-        >
+          animate={!spinning ? { boxShadow: ['0 0 16px rgba(255,200,0,0.4)', '0 0 40px rgba(255,200,0,1.0)', '0 0 16px rgba(255,200,0,0.4)'] } : { boxShadow: '0 0 0px rgba(0,0,0,0)' }}
+          transition={{ duration: 1.2, repeat: Infinity }}>
           {spinning ? '🌀 Spinning...' : '🎰 SPIN TO WIN!'}
         </motion.button>
       )}
 
-      {/* Result label */}
       {winner !== null && (
-        <motion.div
-          className="mt-5 text-center"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 320, delay: 0.15 }}
-        >
-          <div
-            className="text-white text-2xl mb-1"
-            style={{ fontFamily: "'Fredoka One', cursive" }}
-          >
+        <motion.div className="mt-5 text-center"
+          initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 320, delay: 0.15 }}>
+          <div className="text-white text-2xl mb-1" style={{ fontFamily: "'Fredoka One', cursive" }}>
             🎯 You landed on...
           </div>
-          <motion.div
-            className="text-5xl font-black"
-            style={{
-              color: SECTIONS[winner].color,
-              fontFamily: "'Fredoka One', cursive",
-              textShadow: `0 0 24px ${SECTIONS[winner].color}`,
-            }}
-            animate={{ scale: [1, 1.25, 1] }}
-            transition={{ duration: 0.5, delay: 0.35 }}
-          >
-            {SECTIONS[winner].label}
+          <motion.div className="text-5xl font-black"
+            style={{ color: sections[winner].color, fontFamily: "'Fredoka One', cursive", textShadow: `0 0 24px ${sections[winner].color}` }}
+            animate={{ scale: [1, 1.25, 1] }} transition={{ duration: 0.5, delay: 0.35 }}>
+            {sections[winner].label}
           </motion.div>
         </motion.div>
       )}
