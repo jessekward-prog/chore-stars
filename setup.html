@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chore Stars — Setup Guide</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: linear-gradient(160deg, #0f0524 0%, #1a0a3d 40%, #0d1a3d 100%);
+      min-height: 100vh;
+      color: white;
+      font-family: 'Nunito', sans-serif;
+      padding: 0 0 80px;
+    }
+
+    /* Stars */
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: white;
+      animation: twinkle var(--d) ease-in-out infinite;
+      animation-delay: var(--delay);
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.1; }
+      50% { opacity: 0.7; }
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 56px 0 40px;
+    }
+    .hero-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(2.4rem, 8vw, 3.6rem);
+      text-shadow: 0 0 32px rgba(200, 100, 255, 0.8);
+      margin-bottom: 12px;
+      animation: pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.025); }
+    }
+    .hero-sub {
+      color: rgba(255,255,255,0.5);
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 32px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 99px;
+      padding: 8px 20px;
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Steps */
+    .steps { display: flex; flex-direction: column; gap: 20px; }
+
+    .step {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 28px 28px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .step::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 24px 24px 0 0;
+    }
+    .step-1::before { background: linear-gradient(90deg, #a78bfa, #60a5fa); }
+    .step-2::before { background: linear-gradient(90deg, #34d399, #60a5fa); }
+    .step-3::before { background: linear-gradient(90deg, #fbbf24, #f97316); }
+
+    .step-number {
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 6px;
+    }
+    .step-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.6rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step-body {
+      color: rgba(255,255,255,0.7);
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+    .step-body p + p { margin-top: 10px; }
+    .step-body a {
+      color: #a5b4fc;
+      font-weight: 900;
+      text-decoration: none;
+    }
+    .step-body a:hover { text-decoration: underline; }
+
+    .os-choices {
+      display: flex;
+      gap: 10px;
+      margin: 14px 0 0;
+      flex-wrap: wrap;
+    }
+    .os-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 10px 18px;
+      color: white;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 900;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+    .os-btn:hover { background: rgba(255,255,255,0.18); text-decoration: none; }
+
+    /* Code block */
+    .code-block {
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin: 14px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .code-block code {
+      font-family: 'Courier New', monospace;
+      font-size: 1rem;
+      color: #fde68a;
+      letter-spacing: 0.02em;
+      flex: 1;
+    }
+    .copy-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      color: rgba(255,255,255,0.6);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 900;
+      font-size: 0.78rem;
+      padding: 6px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+    .copy-btn.copied { color: #6ee7b7; border-color: rgba(110,231,183,0.4); }
+
+    .note {
+      background: rgba(99,102,241,0.12);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-top: 14px;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.55;
+    }
+    .note strong { color: #c7d2fe; }
+
+    /* Section divider */
+    .section-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.4rem;
+      color: rgba(255,255,255,0.9);
+      margin: 40px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* After-setup checklist */
+    .checklist { display: flex; flex-direction: column; gap: 12px; }
+    .check-item {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .check-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 1px; }
+    .check-text { color: rgba(255,255,255,0.65); font-size: 0.95rem; line-height: 1.55; }
+    .check-text strong { color: white; }
+
+    /* Local network tip */
+    .tip-box {
+      background: rgba(251,191,36,0.08);
+      border: 1px solid rgba(251,191,36,0.25);
+      border-radius: 20px;
+      padding: 22px 24px;
+      margin-top: 16px;
+    }
+    .tip-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: #fde68a;
+    }
+    .tip-body {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+    .tip-body code {
+      background: rgba(0,0,0,0.3);
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-family: 'Courier New', monospace;
+      color: #fde68a;
+      font-size: 0.88rem;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 56px;
+      color: rgba(255,255,255,0.2);
+      font-size: 0.85rem;
+    }
+    footer span { color: rgba(255,255,255,0.35); }
+  </style>
+</head>
+<body>
+
+  <!-- Background stars -->
+  <div class="stars" id="stars"></div>
+
+  <div class="content">
+
+    <div class="hero">
+      <div class="hero-title">⭐ Chore Stars ⭐</div>
+      <div class="hero-sub">Set up your family's chore tracker in 3 steps</div>
+      <div class="hero-badge">Self-hosted &nbsp;·&nbsp; No account needed &nbsp;·&nbsp; Runs on your computer</div>
+    </div>
+
+    <div class="steps">
+
+      <!-- Step 1 -->
+      <div class="step step-1">
+        <div class="step-number">Step 1 of 3</div>
+        <div class="step-title">🐋 Install Docker Desktop</div>
+        <div class="step-body">
+          <p>Docker is a free app that runs the whole stack for you — no fiddling with databases or Node.js. Download it for your computer:</p>
+          <div class="os-choices">
+            <a class="os-btn" href="https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe">
+              🪟 Windows
+            </a>
+            <a class="os-btn" href="https://desktop.docker.com/mac/main/arm64/Docker.dmg">
+              🍎 Mac (Apple chip)
+            </a>
+            <a class="os-btn" href="https://desktop.docker.com/mac/main/amd64/Docker.dmg">
+              🍎 Mac (Intel)
+            </a>
+            <a class="os-btn" href="https://docs.docker.com/desktop/install/linux-install/">
+              🐧 Linux
+            </a>
+          </div>
+          <div class="note">
+            <strong>Already have Docker?</strong> Skip straight to step 2. Just make sure Docker Desktop is open and running before step 3.
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step step-2">
+        <div class="step-number">Step 2 of 3</div>
+        <div class="step-title">📦 Download the code</div>
+        <div class="step-body">
+          <p>Go to <a href="https://github.com/jessekward-prog/chore-stars" target="_blank">github.com/jessekward-prog/chore-stars</a> and click the green <strong>Code</strong> button, then <strong>Download ZIP</strong>.</p>
+          <p>Unzip it somewhere easy to find — your Desktop or Documents folder works great.</p>
+          <div class="note">
+            <strong>Have Git installed?</strong> You can also run:<br />
+            <code style="display:inline-block;margin-top:6px;background:rgba(0,0,0,0.3);padding:4px 10px;border-radius:8px;font-family:'Courier New',monospace;color:#fde68a;font-size:0.88rem;">
+              git clone https://github.com/jessekward-prog/chore-stars.git
+            </code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step step-3">
+        <div class="step-number">Step 3 of 3</div>
+        <div class="step-title">🚀 Start it up</div>
+        <div class="step-body">
+          <p>Open a terminal <em>(Windows: search "Command Prompt" or "PowerShell" · Mac: search "Terminal")</em> and navigate into the folder you unzipped:</p>
+          <div class="code-block">
+            <code>cd path/to/chore-stars</code>
+            <button class="copy-btn" onclick="copy(this, 'cd path/to/chore-stars')">Copy</button>
+          </div>
+          <p style="margin-top:14px;">Then run:</p>
+          <div class="code-block">
+            <code>docker compose up --build</code>
+            <button class="copy-btn" onclick="copy(this, 'docker compose up --build')">Copy</button>
+          </div>
+          <div class="note">
+            The first run takes 2–3 minutes to download and build everything. You'll see a lot of text scroll past — that's normal. When it says <strong style="color:#6ee7b7;">Chore Stars running at http://localhost:3001</strong> you're ready.
+          </div>
+          <p style="margin-top:16px;">Then open your browser and go to:</p>
+          <div class="code-block">
+            <code>http://localhost:3001</code>
+            <button class="copy-btn" onclick="copy(this, 'http://localhost:3001')">Copy</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- First login -->
+    <div class="section-title">🔒 First time setup</div>
+    <div class="checklist">
+      <div class="check-item">
+        <div class="check-icon">1️⃣</div>
+        <div class="check-text">Tap the <strong>🔒 lock icon</strong> in the top-right corner of the chore screen.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">2️⃣</div>
+        <div class="check-text">The default password is <strong>stars123</strong> — enter it and tap Unlock.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">3️⃣</div>
+        <div class="check-text">Go to the <strong>Security</strong> tab and change the password to something only you know.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">4️⃣</div>
+        <div class="check-text">Go to the <strong>Kids</strong> tab to rename the kids, add more, or upload their photos.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">5️⃣</div>
+        <div class="check-text">Go to the <strong>Prizes</strong> tab and fill in the wheel slots — <em>Movie Night, Ice Cream Trip, Stay Up Late…</em> whatever motivates yours.</div>
+      </div>
+    </div>
+
+    <!-- Local network tip -->
+    <div class="section-title">📱 Using it on phones and tablets</div>
+    <div class="tip-box">
+      <div class="tip-title">Access from any device on your home wifi</div>
+      <div class="tip-body">
+        The app runs on the computer you installed it on. Other devices on the same wifi can reach it using that computer's local IP address instead of <code>localhost</code>.<br /><br />
+        <strong style="color:rgba(255,255,255,0.8);">Find your computer's local IP:</strong><br />
+        &nbsp;• <strong style="color:rgba(255,255,255,0.7);">Windows:</strong> Open Command Prompt → type <code>ipconfig</code> → look for IPv4 Address<br />
+        &nbsp;• <strong style="color:rgba(255,255,255,0.7);">Mac:</strong> System Settings → Network → your connection → IP Address<br /><br />
+        Then on your phone, go to <code>http://192.168.x.x:3001</code> (using the actual IP you found).
+        Add it to your home screen for an app-like experience.
+      </div>
+    </div>
+
+    <!-- Keep running tip -->
+    <div class="section-title">🔁 Keeping it running</div>
+    <div class="checklist">
+      <div class="check-item">
+        <div class="check-icon">💡</div>
+        <div class="check-text">
+          The app keeps running as long as Docker Desktop is open. If you restart your computer, just open Docker Desktop and the container will start automatically — or run <code style="background:rgba(0,0,0,0.3);padding:2px 7px;border-radius:6px;font-family:'Courier New',monospace;font-size:0.85rem;color:#fde68a;">docker compose up</code> again from the project folder.
+        </div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">💾</div>
+        <div class="check-text">
+          <strong>Your data is safe.</strong> Everything (kids, chores, history) is stored in a Docker volume — it survives restarts, updates, and rebuilds.
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Built with ⭐ for Peyton &amp; Jude &nbsp;·&nbsp; <span>github.com/jessekward-prog/chore-stars</span></p>
+    </footer>
+
+  </div>
+
+  <script>
+    // Generate stars
+    const container = document.getElementById('stars')
+    for (let i = 0; i < 60; i++) {
+      const s = document.createElement('div')
+      const size = (i % 3) + 1
+      s.className = 'star'
+      s.style.cssText = `
+        width:${size}px; height:${size}px;
+        left:${(i * 37) % 100}%;
+        top:${(i * 53) % 100}%;
+        --d:${2 + (i % 4)}s;
+        --delay:${(i * 0.3) % 4}s;
+        opacity:0.3;
+      `
+      container.appendChild(s)
+    }
+
+    // Copy buttons
+    function copy(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!'
+        btn.classList.add('copied')
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied') }, 2000)
+      })
+    }
+  </script>
+</body>
+</html>
