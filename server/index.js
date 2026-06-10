@@ -26,28 +26,6 @@ async function initDB() {
   const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf8')
   await pool.query(schema)
 
-  const { rows: [kc] } = await pool.query('SELECT COUNT(*)::int AS c FROM kids')
-  if (kc.c === 0) {
-    await pool.query(`
-      INSERT INTO kids (name, color_from, color_to, tab_from, tab_to, sort_order) VALUES
-      ('Peyton', '#f472b6', '#a855f7', '#e879f9', '#9333ea', 0),
-      ('Jude',   '#3b82f6', '#06b6d4', '#3b82f6', '#06b6d4', 1)
-    `)
-  }
-
-  const { rows: [cc] } = await pool.query('SELECT COUNT(*)::int AS c FROM chores')
-  if (cc.c === 0) {
-    await pool.query(`
-      INSERT INTO chores (emoji, label, color_from, color_to, checked_from, checked_to, check_color, sort_order) VALUES
-      ('🌞', 'Wake Up & Stretch', '#facc15', '#f97316', '#b45309', '#c2410c', '#ea580c', 0),
-      ('👕', 'Get Dressed',       '#a78bfa', '#e879f9', '#6d28d9', '#a21caf', '#7c3aed', 1),
-      ('🥣', 'Eat Breakfast',     '#34d399', '#2dd4bf', '#065f46', '#134e4a', '#047857', 2),
-      ('🦷', 'Brush Teeth',       '#38bdf8', '#67e8f9', '#075985', '#164e63', '#0369a1', 3),
-      ('🛏️', 'Make Your Bed',     '#f472b6', '#fb7185', '#9d174d', '#9f1239', '#be185d', 4),
-      ('🎒', 'Pack Your Bag',     '#fb923c', '#f87171', '#c2410c', '#b91c1c', '#b91c1c', 5)
-    `)
-  }
-
   const { rows: [pc] } = await pool.query('SELECT COUNT(*)::int AS c FROM prizes')
   if (pc.c === 0) {
     await pool.query(`
@@ -60,10 +38,18 @@ async function initDB() {
     `)
   }
 
-  const { rows: [sc] } = await pool.query("SELECT COUNT(*)::int AS c FROM settings WHERE key = 'parent_password'")
-  if (sc.c === 0) {
+  const { rows: [pwRow] } = await pool.query("SELECT COUNT(*)::int AS c FROM settings WHERE key = 'parent_password'")
+  if (pwRow.c === 0) {
     const hash = await bcrypt.hash('stars123', 10)
     await pool.query("INSERT INTO settings (key, value) VALUES ('parent_password', $1)", [hash])
+  }
+
+  // Set setup_complete based on whether kids already exist (handles existing installs)
+  const { rows: [scRow] } = await pool.query("SELECT COUNT(*)::int AS c FROM settings WHERE key = 'setup_complete'")
+  if (scRow.c === 0) {
+    const { rows: [kc] } = await pool.query('SELECT COUNT(*)::int AS c FROM kids')
+    const val = kc.c > 0 ? 'true' : 'false'
+    await pool.query("INSERT INTO settings (key, value) VALUES ('setup_complete', $1)", [val])
   }
 }
 
@@ -101,8 +87,12 @@ app.use(session({
   cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 },
 }))
 
-const requireParent = (req, res, next) => {
+const requireParent = async (req, res, next) => {
   if (req.session.isParent) return next()
+  try {
+    const { rows } = await pool.query("SELECT value FROM settings WHERE key = 'setup_complete'")
+    if (rows[0]?.value !== 'true') return next()
+  } catch {}
   res.status(401).json({ error: 'Not authorized' })
 }
 
@@ -147,13 +137,14 @@ app.get('/api/state', async (req, res) => {
     const today = new Date().toISOString().split('T')[0]
     const weekStart = getWeekStart()
 
-    const [kids, chores, prizes, checks, days, spin] = await Promise.all([
+    const [kids, chores, prizes, checks, days, spin, setupRow] = await Promise.all([
       pool.query('SELECT * FROM kids ORDER BY sort_order, id'),
       pool.query('SELECT * FROM chores WHERE active = TRUE ORDER BY sort_order, id'),
       pool.query('SELECT * FROM prizes ORDER BY sort_order, id'),
       pool.query('SELECT kid_id, chore_id FROM daily_checks WHERE check_date = $1', [today]),
       pool.query('SELECT day_key FROM completed_days WHERE week_start = $1', [weekStart]),
       pool.query('SELECT id FROM wheel_spins WHERE week_start = $1', [weekStart]),
+      pool.query("SELECT value FROM settings WHERE key = 'setup_complete'"),
     ])
 
     const checked = {}
@@ -170,6 +161,7 @@ app.get('/api/state', async (req, res) => {
       completedDays: days.rows.map(r => r.day_key),
       wheelSpun: spin.rows.length > 0,
       weekStart,
+      setupComplete: setupRow.rows[0]?.value === 'true',
     })
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
@@ -330,6 +322,16 @@ app.put('/api/prizes/:id', requireParent, async (req, res) => {
       [label, color, darkColor, req.params.id]
     )
     res.json(rows[0])
+  } catch (e) { res.status(500).json({ error: e.message }) }
+})
+
+// ── Setup complete ────────────────────────────────────────────────────────────
+app.post('/api/setup/complete', async (req, res) => {
+  try {
+    await pool.query(
+      "INSERT INTO settings (key, value) VALUES ('setup_complete', 'true') ON CONFLICT (key) DO UPDATE SET value = 'true'"
+    )
+    res.json({ ok: true })
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 

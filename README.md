@@ -12,7 +12,7 @@ cd chore-chart
 docker compose up --build
 ```
 
-Open **http://localhost:3001** in your browser.
+Open **http://localhost:3013** in your browser.
 
 That's it. No Node, no PostgreSQL needed on your machine — Docker handles everything.
 

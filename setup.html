@@ -282,25 +282,39 @@
       <!-- Step 1 -->
       <div class="step step-1">
         <div class="step-number">Step 1 of 3</div>
-        <div class="step-title">🐋 Install Docker Desktop</div>
+        <div class="step-title">🐋 Install Docker</div>
         <div class="step-body">
-          <p>Docker is a free app that runs the whole stack for you — no fiddling with databases or Node.js. Download it for your computer:</p>
-          <div class="os-choices">
-            <a class="os-btn" href="https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe">
-              🪟 Windows
-            </a>
-            <a class="os-btn" href="https://desktop.docker.com/mac/main/arm64/Docker.dmg">
-              🍎 Mac (Apple chip)
-            </a>
-            <a class="os-btn" href="https://desktop.docker.com/mac/main/amd64/Docker.dmg">
-              🍎 Mac (Intel)
-            </a>
-            <a class="os-btn" href="https://docs.docker.com/desktop/install/linux-install/">
-              🐧 Linux
-            </a>
+          <p>Docker runs the whole stack for you — no fiddling with databases or Node.js. Pick your OS:</p>
+
+          <div class="note" style="margin-top:14px;">
+            <strong>🪟 Windows</strong> — open PowerShell and run:
+            <div class="code-block" style="margin-top:8px;">
+              <code>winget install Docker.DockerDesktop</code>
+              <button class="copy-btn" onclick="copy(this, 'winget install Docker.DockerDesktop')">Copy</button>
+            </div>
+            <span style="font-size:0.85rem;color:rgba(255,255,255,0.4);">winget is built into Windows 10/11. Or <a href="https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe" style="color:#a5b4fc;">download the installer</a> instead.</span>
           </div>
-          <div class="note">
-            <strong>Already have Docker?</strong> Skip straight to step 2. Just make sure Docker Desktop is open and running before step 3.
+
+          <div class="note" style="margin-top:10px;">
+            <strong>🍎 Mac</strong> — open Terminal and run:
+            <div class="code-block" style="margin-top:8px;">
+              <code>brew install --cask docker</code>
+              <button class="copy-btn" onclick="copy(this, 'brew install --cask docker')">Copy</button>
+            </div>
+            <span style="font-size:0.85rem;color:rgba(255,255,255,0.4);">Requires <a href="https://brew.sh" target="_blank" style="color:#a5b4fc;">Homebrew</a>. Or download: <a href="https://desktop.docker.com/mac/main/arm64/Docker.dmg" style="color:#a5b4fc;">Apple chip</a> · <a href="https://desktop.docker.com/mac/main/amd64/Docker.dmg" style="color:#a5b4fc;">Intel</a>.</span>
+          </div>
+
+          <div class="note" style="margin-top:10px;">
+            <strong>🐧 Linux</strong> — open a terminal and run:
+            <div class="code-block" style="margin-top:8px;">
+              <code>curl -fsSL https://get.docker.com | sh</code>
+              <button class="copy-btn" onclick="copy(this, 'curl -fsSL https://get.docker.com | sh')">Copy</button>
+            </div>
+            <span style="font-size:0.85rem;color:rgba(255,255,255,0.4);">Official Docker install script — works on Ubuntu, Debian, Fedora, and most distros.</span>
+          </div>
+
+          <div class="note" style="margin-top:10px;">
+            <strong>Already have Docker?</strong> Skip to step 2. Make sure Docker Desktop is open and running before step 3.
           </div>
         </div>
       </div>
@@ -310,9 +324,23 @@
         <div class="step-number">Step 2 of 3</div>
         <div class="step-title">📦 Download the code</div>
         <div class="step-body">
-          <p>Go to <a href="https://github.com/jessekward-prog/chore-stars" target="_blank">github.com/jessekward-prog/chore-stars</a> and click the green <strong>Code</strong> button, then <strong>Download ZIP</strong>.</p>
-          <p>Unzip it somewhere easy to find — your Desktop or Documents folder works great.</p>
-          <div class="note">
+          <p>Click this link to open the project page on GitHub:</p>
+          <div style="margin: 12px 0;">
+            <a href="https://github.com/jessekward-prog/chore-stars" target="_blank"
+              style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:10px 18px;color:white;font-weight:900;text-decoration:none;font-size:0.95rem;">
+              🐙 github.com/jessekward-prog/chore-stars
+            </a>
+          </div>
+          <p>Once you're on that page:</p>
+          <ol style="margin:12px 0 0 20px;display:flex;flex-direction:column;gap:8px;color:rgba(255,255,255,0.7);line-height:1.55;">
+            <li>Look for the big <strong style="color:white;">green "Code" button</strong> near the top right of the file list</li>
+            <li>Click it — a small dropdown appears</li>
+            <li>Click <strong style="color:white;">"Download ZIP"</strong> at the bottom of that dropdown</li>
+          </ol>
+          <div class="note" style="margin-top:14px;">
+            Once downloaded, <strong>unzip the file</strong> somewhere easy to find — your Desktop or Documents folder works great. You should end up with a folder called <code>chore-stars-main</code>.
+          </div>
+          <div class="note" style="margin-top:10px;">
             <strong>Have Git installed?</strong> You can also run:<br />
             <code style="display:inline-block;margin-top:6px;background:rgba(0,0,0,0.3);padding:4px 10px;border-radius:8px;font-family:'Courier New',monospace;color:#fde68a;font-size:0.88rem;">
               git clone https://github.com/jessekward-prog/chore-stars.git
@@ -326,23 +354,35 @@
         <div class="step-number">Step 3 of 3</div>
         <div class="step-title">🚀 Start it up</div>
         <div class="step-body">
-          <p>Open a terminal <em>(Windows: search "Command Prompt" or "PowerShell" · Mac: search "Terminal")</em> and navigate into the folder you unzipped:</p>
-          <div class="code-block">
-            <code>cd path/to/chore-stars</code>
-            <button class="copy-btn" onclick="copy(this, 'cd path/to/chore-stars')">Copy</button>
+          <p>You need to open a terminal <em>inside</em> the folder you unzipped. The easiest way depends on your OS — no typing the path needed:</p>
+
+          <div class="note" style="margin-top:14px;">
+            <strong>🪟 Windows</strong><br />
+            Open the unzipped folder in File Explorer. Click the <strong>address bar</strong> at the top (where it shows the folder path) — it'll highlight the path. Type <code>cmd</code> and press <strong>Enter</strong>. A Command Prompt opens already inside that folder.
           </div>
-          <p style="margin-top:14px;">Then run:</p>
+
+          <div class="note" style="margin-top:10px;">
+            <strong>🍎 Mac</strong><br />
+            <strong>Right-click</strong> (or Control+click) the unzipped folder in Finder and choose <strong>"New Terminal at Folder"</strong>. If you don't see that option, go to System Settings → Privacy &amp; Security → Developer Tools and enable Terminal.
+          </div>
+
+          <div class="note" style="margin-top:10px;">
+            <strong>🐧 Linux</strong><br />
+            Right-click inside the unzipped folder in your file manager and choose <strong>"Open Terminal Here"</strong>.
+          </div>
+
+          <p style="margin-top:16px;">Once the terminal is open in the right folder, run:</p>
           <div class="code-block">
             <code>docker compose up --build</code>
             <button class="copy-btn" onclick="copy(this, 'docker compose up --build')">Copy</button>
           </div>
           <div class="note">
-            The first run takes 2–3 minutes to download and build everything. You'll see a lot of text scroll past — that's normal. When it says <strong style="color:#6ee7b7;">Chore Stars running at http://localhost:3001</strong> you're ready.
+            The first run takes 2–3 minutes to download and build everything. You'll see a lot of text scroll past — that's normal. When you see <strong style="color:#6ee7b7;">Chore Stars running</strong> in the terminal, you're ready.
           </div>
           <p style="margin-top:16px;">Then open your browser and go to:</p>
           <div class="code-block">
-            <code>http://localhost:3001</code>
-            <button class="copy-btn" onclick="copy(this, 'http://localhost:3001')">Copy</button>
+            <code>http://localhost:3013</code>
+            <button class="copy-btn" onclick="copy(this, 'http://localhost:3013')">Copy</button>
           </div>
         </div>
       </div>
@@ -350,41 +390,42 @@
     </div>
 
     <!-- First login -->
-    <div class="section-title">🔒 First time setup</div>
+    <div class="section-title">✨ First time setup</div>
     <div class="checklist">
       <div class="check-item">
-        <div class="check-icon">1️⃣</div>
-        <div class="check-text">Tap the <strong>🔒 lock icon</strong> in the top-right corner of the chore screen.</div>
+        <div class="check-icon">🧙</div>
+        <div class="check-text">
+          The first time you open the app, a <strong>setup wizard</strong> runs automatically. It walks you through adding your kids, choosing their daily chores, naming the prize wheel slots, and setting a parent password — all before anything else appears.
+        </div>
       </div>
       <div class="check-item">
-        <div class="check-icon">2️⃣</div>
-        <div class="check-text">The default password is <strong>stars123</strong> — enter it and tap Unlock.</div>
-      </div>
-      <div class="check-item">
-        <div class="check-icon">3️⃣</div>
-        <div class="check-text">Go to the <strong>Security</strong> tab and change the password to something only you know.</div>
-      </div>
-      <div class="check-item">
-        <div class="check-icon">4️⃣</div>
-        <div class="check-text">Go to the <strong>Kids</strong> tab to rename the kids, add more, or upload their photos.</div>
-      </div>
-      <div class="check-item">
-        <div class="check-icon">5️⃣</div>
-        <div class="check-text">Go to the <strong>Prizes</strong> tab and fill in the wheel slots — <em>Movie Night, Ice Cream Trip, Stay Up Late…</em> whatever motivates yours.</div>
+        <div class="check-icon">🔒</div>
+        <div class="check-text">
+          After setup, tap the <strong>lock icon</strong> anytime to get back into the parent settings — rename kids, change chores, update prizes, or change your password.
+        </div>
       </div>
     </div>
 
     <!-- Local network tip -->
-    <div class="section-title">📱 Using it on phones and tablets</div>
+    <div class="section-title">📱 Using it on phones &amp; tablets</div>
     <div class="tip-box">
       <div class="tip-title">Access from any device on your home wifi</div>
       <div class="tip-body">
-        The app runs on the computer you installed it on. Other devices on the same wifi can reach it using that computer's local IP address instead of <code>localhost</code>.<br /><br />
-        <strong style="color:rgba(255,255,255,0.8);">Find your computer's local IP:</strong><br />
-        &nbsp;• <strong style="color:rgba(255,255,255,0.7);">Windows:</strong> Open Command Prompt → type <code>ipconfig</code> → look for IPv4 Address<br />
-        &nbsp;• <strong style="color:rgba(255,255,255,0.7);">Mac:</strong> System Settings → Network → your connection → IP Address<br /><br />
-        Then on your phone, go to <code>http://192.168.x.x:3001</code> (using the actual IP you found).
-        Add it to your home screen for an app-like experience.
+        <code>localhost</code> only works on the computer running Docker. Phones, tablets, and other computers on the same wifi need to use your computer's <strong style="color:rgba(255,255,255,0.85);">local IP address</strong> instead.<br /><br />
+
+        <strong style="color:rgba(255,255,255,0.85);">Step 1 — find your computer's local IP:</strong><br />
+        &nbsp;• <strong style="color:rgba(255,255,255,0.7);">Windows:</strong> Open Command Prompt → type <code>ipconfig</code> → look for <strong>IPv4 Address</strong> (usually starts with <code>192.168.</code>)<br />
+        &nbsp;• <strong style="color:rgba(255,255,255,0.7);">Mac:</strong> System Settings → Network → your wifi → IP Address<br />
+        &nbsp;• <strong style="color:rgba(255,255,255,0.7);">Linux:</strong> Open a terminal → type <code>hostname -I</code><br /><br />
+
+        <strong style="color:rgba(255,255,255,0.85);">Step 2 — open on your tablet or phone:</strong><br />
+        Type that IP address into the browser with <code>:3013</code> on the end — for example:<br /><br />
+        <code>http://192.168.1.42:3013</code><br /><br />
+
+        <strong style="color:rgba(255,255,255,0.85);">Step 3 — add to your home screen (optional but great):</strong><br />
+        &nbsp;• <strong style="color:rgba(255,255,255,0.7);">iPhone/iPad:</strong> Tap the Share button → "Add to Home Screen"<br />
+        &nbsp;• <strong style="color:rgba(255,255,255,0.7);">Android:</strong> Tap the browser menu → "Add to Home Screen"<br /><br />
+        This makes it launch fullscreen like a real app — no browser bar.
       </div>
     </div>
 
@@ -402,6 +443,23 @@
         <div class="check-text">
           <strong>Your data is safe.</strong> Everything (kids, chores, history) is stored in a Docker volume — it survives restarts, updates, and rebuilds.
         </div>
+      </div>
+    </div>
+
+    <!-- Nuclear option -->
+    <div class="section-title" style="color:#f87171;margin-top:48px;">☢️ Remove everything</div>
+    <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.35);border-radius:20px;padding:24px;">
+      <p style="color:rgba(255,255,255,0.75);font-size:0.95rem;line-height:1.65;margin-bottom:16px;">
+        Want to completely remove Chore Stars from your computer? Run this from inside the project folder. It stops the app, deletes all containers, removes the built image, and <strong style="color:#f87171;">permanently deletes all your data</strong> (kids, chores, history — everything).
+      </p>
+      <div class="code-block" style="border-color:rgba(239,68,68,0.3);">
+        <code style="color:#fca5a5;">docker compose down -v --rmi all</code>
+        <button class="copy-btn" onclick="copy(this, 'docker compose down -v --rmi all')" style="border-color:rgba(239,68,68,0.3);color:rgba(252,165,165,0.7);">Copy</button>
+      </div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;font-size:0.88rem;color:rgba(255,255,255,0.45);line-height:1.55;">
+        <div>🗑️ <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:5px;font-family:'Courier New',monospace;font-size:0.83rem;color:#fca5a5;">-v</code> — deletes the database volume (all your data)</div>
+        <div>🗑️ <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:5px;font-family:'Courier New',monospace;font-size:0.83rem;color:#fca5a5;">--rmi all</code> — removes the built Docker image</div>
+        <div style="margin-top:4px;">Then just delete the <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:5px;font-family:'Courier New',monospace;font-size:0.83rem;color:#fca5a5;">chore-stars</code> folder and Docker has no trace of it.</div>
       </div>
     </div>
 

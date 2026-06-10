@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAppState } from './hooks/useAppState.js'
 import WelcomeScreen from './WelcomeScreen.jsx'
+import SetupWizard from './SetupWizard.jsx'
 import App from './App.jsx'
 import ParentSettings from './ParentSettings.jsx'
 
@@ -45,6 +46,10 @@ export default function Root() {
 
   if (loading) return <LoadingScreen />
   if (error) return <ErrorScreen error={error} onRetry={refresh} />
+
+  if (!state.setupComplete) {
+    return <SetupWizard prizes={state.prizes} onComplete={refresh} />
+  }
 
   if (screen === 'welcome') {
     return <WelcomeScreen kids={state.kids} onStart={() => setScreen('app')} />

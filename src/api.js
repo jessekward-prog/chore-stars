@@ -33,3 +33,5 @@ export const updateChore = (id, data)  => req(`/api/chores/${id}`,    { method: 
 export const deleteChore = (id)        => req(`/api/chores/${id}`,    { method: 'DELETE' })
 
 export const updatePrize = (id, data)  => req(`/api/prizes/${id}`,    { method: 'PUT',    body: JSON.stringify(data) })
+
+export const completeSetup = () => req('/api/setup/complete', { method: 'POST', body: JSON.stringify({}) })

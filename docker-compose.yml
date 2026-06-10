@@ -16,7 +16,7 @@ services:
   app:
     build: .
     ports:
-      - "3001:3001"
+      - "3013:3001"
     environment:
       DB_HOST: postgres
       DB_PORT: 5432

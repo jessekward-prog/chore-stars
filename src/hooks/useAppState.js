@@ -19,6 +19,7 @@ export function useAppState() {
         ...data,
         checked: checkedMap,
         completedDays: new Set(data.completedDays),
+        setupComplete: data.setupComplete ?? true,
       })
     } catch (e) {
       setError(e.message)
