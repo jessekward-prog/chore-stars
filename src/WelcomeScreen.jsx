@@ -1,11 +1,16 @@
 import { motion } from 'framer-motion'
 
-export default function WelcomeScreen({ kids, onStart }) {
+export default function WelcomeScreen({ kids, onStart, onOpenParent }) {
   return (
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center px-6"
       style={{ background: 'linear-gradient(160deg, #0f0524 0%, #1a0a3d 40%, #0d1a3d 100%)', fontFamily: "'Nunito', sans-serif" }}
     >
+      <button onClick={onOpenParent}
+        className="fixed top-6 right-6 z-20 text-white/30 hover:text-white/70 text-2xl transition-colors"
+        style={{ lineHeight: 1, minWidth: 44, minHeight: 44 }}>
+        🔒
+      </button>
       {/* Stars */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {Array.from({ length: 40 }).map((_, i) => (
@@ -102,10 +107,6 @@ export default function WelcomeScreen({ kids, onStart }) {
         🚀 LET'S DO CHORES!
       </motion.button>
 
-      <motion.div className="text-white/25 text-xs mt-8 relative z-10"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}>
-        Tap the lock to access parent settings
-      </motion.div>
     </div>
   )
 }

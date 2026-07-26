@@ -61,9 +61,12 @@ export default function Root() {
 
   const { state, loading, error, toggle, markDayComplete, markWheelSpun, refresh } = useAppState(!!auth?.loggedIn)
   const [screen, setScreen] = useState('welcome')
+  const [screenBeforeParent, setScreenBeforeParent] = useState('welcome')
   const [isParent, setIsParent] = useState(false)
   const [showStartPin, setShowStartPin] = useState(false)
   const [startKidId, setStartKidId] = useState(null)
+
+  const openParent = () => { setScreenBeforeParent(screen); setScreen('parent') }
 
   if (authLoading) return <LoadingScreen />
 
@@ -88,7 +91,7 @@ export default function Root() {
     }
     screenEl = (
       <>
-        <WelcomeScreen kids={state.kids} onStart={handleStart} />
+        <WelcomeScreen kids={state.kids} onStart={handleStart} onOpenParent={openParent} />
         <AnimatePresence>
           {showStartPin && (
             <SwitchKidModal
@@ -107,7 +110,7 @@ export default function Root() {
         state={state}
         isParent={isParent}
         setIsParent={setIsParent}
-        onClose={() => setScreen('app')}
+        onClose={() => setScreen(screenBeforeParent)}
         onRefresh={refresh}
         onShowIntro={() => setShowIntro(true)}
         onLoggedOut={() => refreshAuth()}
@@ -121,7 +124,7 @@ export default function Root() {
         markDayComplete={markDayComplete}
         markWheelSpun={markWheelSpun}
         refresh={refresh}
-        onOpenParent={() => setScreen('parent')}
+        onOpenParent={openParent}
         initialKidId={startKidId}
       />
     )
