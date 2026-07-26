@@ -24,8 +24,8 @@ const pool = new Pool({
 })
 
 const DEMO_KIDS = [
-  { name: 'Child One', colorFrom: '#f472b6', colorTo: '#a855f7', tabFrom: '#e879f9', tabTo: '#9333ea', accentColor: '#a855f7' },
-  { name: 'Child Two', colorFrom: '#3b82f6', colorTo: '#06b6d4', tabFrom: '#3b82f6', tabTo: '#06b6d4', accentColor: '#3b82f6' },
+  { name: 'Child One', accentColor: '#a855f7' },
+  { name: 'Child Two', accentColor: '#3b82f6' },
 ]
 
 const DEMO_CHORES = [
@@ -47,8 +47,8 @@ async function seedDemoData(client, userId) {
   for (let i = 0; i < DEMO_KIDS.length; i++) {
     const k = DEMO_KIDS[i]
     await client.query(
-      'INSERT INTO kids (name, color_from, color_to, tab_from, tab_to, accent_color, sort_order, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-      [k.name, k.colorFrom, k.colorTo, k.tabFrom, k.tabTo, k.accentColor, i, userId]
+      'INSERT INTO kids (name, accent_color, sort_order, user_id) VALUES ($1,$2,$3,$4)',
+      [k.name, k.accentColor, i, userId]
     )
   }
   for (let i = 0; i < DEMO_CHORES.length; i++) {
@@ -326,11 +326,11 @@ app.get('/api/kids', async (req, res) => {
 app.post('/api/kids', requireParent, async (req, res) => {
   try {
     const uid = req.session.userId
-    const { name, colorFrom, colorTo, tabFrom, tabTo, accentColor, pin } = req.body
+    const { name, accentColor, pin } = req.body
     const { rows: [{ max }] } = await pool.query('SELECT MAX(sort_order) AS max FROM kids WHERE user_id = $1', [uid])
     const { rows } = await pool.query(
-      'INSERT INTO kids (name, color_from, color_to, tab_from, tab_to, accent_color, pin, sort_order, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
-      [name, colorFrom || '#f472b6', colorTo || '#a855f7', tabFrom || '#e879f9', tabTo || '#9333ea', accentColor || '#8b5cf6', pin || null, (max ?? -1) + 1, uid]
+      'INSERT INTO kids (name, accent_color, pin, sort_order, user_id) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [name, accentColor || '#8b5cf6', pin || null, (max ?? -1) + 1, uid]
     )
     res.json(rows[0])
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -338,10 +338,10 @@ app.post('/api/kids', requireParent, async (req, res) => {
 
 app.put('/api/kids/:id', requireParent, async (req, res) => {
   try {
-    const { name, colorFrom, colorTo, tabFrom, tabTo, accentColor, pin } = req.body
+    const { name, accentColor, pin } = req.body
     const { rows } = await pool.query(
-      'UPDATE kids SET name=$1, color_from=$2, color_to=$3, tab_from=$4, tab_to=$5, accent_color=$6, pin=$7 WHERE id=$8 AND user_id=$9 RETURNING *',
-      [name, colorFrom, colorTo, tabFrom, tabTo, accentColor || '#8b5cf6', pin || null, req.params.id, req.session.userId]
+      'UPDATE kids SET name=$1, accent_color=$2, pin=$3 WHERE id=$4 AND user_id=$5 RETURNING *',
+      [name, accentColor || '#8b5cf6', pin || null, req.params.id, req.session.userId]
     )
     res.json(rows[0])
   } catch (e) { res.status(500).json({ error: e.message }) }

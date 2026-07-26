@@ -24,6 +24,26 @@ function Input({ label, value, onChange, type = 'text', placeholder }) {
   )
 }
 
+const ACCENT_SWATCHES = ['#f472b6', '#a855f7', '#3b82f6', '#06b6d4', '#22c55e', '#eab308', '#f97316', '#ef4444']
+
+function SwatchPicker({ value, onChange }) {
+  return (
+    <div className="flex gap-2 flex-wrap mb-3">
+      {ACCENT_SWATCHES.map(c => (
+        <button key={c} type="button" onClick={() => onChange(c)}
+          className="rounded-full flex-shrink-0"
+          style={{
+            width: 36, height: 36,
+            background: c,
+            border: value === c ? '3px solid white' : '3px solid transparent',
+            boxShadow: value === c ? '0 0 0 2px rgba(255,255,255,0.3)' : 'none',
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function ColorRow({ label, value, onChange }) {
   return (
     <div className="flex items-center gap-3 mb-2">
@@ -144,13 +164,13 @@ function KidsTab({ kids, onRefresh }) {
   const startEdit = (kid) => {
     setAdding(false)
     setEditing(kid.id)
-    setForm({ name: kid.name, colorFrom: kid.color_from, colorTo: kid.color_to, tabFrom: kid.tab_from, tabTo: kid.tab_to, accentColor: kid.accent_color || '#8b5cf6', pin: kid.pin || '' })
+    setForm({ name: kid.name, accentColor: kid.accent_color || '#8b5cf6', pin: kid.pin || '' })
   }
 
   const startAdd = () => {
     setEditing(null)
     setAdding(true)
-    setForm({ name: '', colorFrom: '#f472b6', colorTo: '#a855f7', tabFrom: '#e879f9', tabTo: '#9333ea', accentColor: '#8b5cf6', pin: '' })
+    setForm({ name: '', accentColor: '#8b5cf6', pin: '' })
   }
 
   const cancel = () => { setEditing(null); setAdding(false) }
@@ -190,14 +210,13 @@ function KidsTab({ kids, onRefresh }) {
           <div key={kid.id} style={CARD}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-black text-white flex-shrink-0 overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${kid.color_from}, ${kid.color_to})` }}>
+                style={{ background: kid.accent_color || '#8b5cf6' }}>
                 {kid.avatar_url
                   ? <img src={kid.avatar_url} alt={kid.name} className="w-full h-full object-cover" />
                   : kid.name[0]}
               </div>
               <div className="flex-1">
                 <div className="text-white font-black text-base">{kid.name}</div>
-                <div className="text-white/30 text-xs">{kid.color_from} → {kid.color_to}</div>
               </div>
               <div className="flex gap-2">
                 <Btn small onClick={() => handleAvatar(kid.id)} disabled={uploading === kid.id}>
@@ -211,13 +230,7 @@ function KidsTab({ kids, onRefresh }) {
             {editing === kid.id && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}>
                 <Input label="Name" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} />
-                <div className="grid grid-cols-2 gap-x-4">
-                  <ColorRow label="Card from"     value={form.colorFrom} onChange={v => setForm(f => ({ ...f, colorFrom: v }))} />
-                  <ColorRow label="Card to"       value={form.colorTo}   onChange={v => setForm(f => ({ ...f, colorTo: v }))} />
-                  <ColorRow label="Tab from"      value={form.tabFrom}   onChange={v => setForm(f => ({ ...f, tabFrom: v }))} />
-                  <ColorRow label="Tab to"        value={form.tabTo}     onChange={v => setForm(f => ({ ...f, tabTo: v }))} />
-                  <ColorRow label="Accent colour" value={form.accentColor} onChange={v => setForm(f => ({ ...f, accentColor: v }))} />
-                </div>
+                <SwatchPicker value={form.accentColor} onChange={v => setForm(f => ({ ...f, accentColor: v }))} />
                 <Input label="Tab PIN (4 digits, optional)" value={form.pin}
                   onChange={v => { if (/^\d{0,4}$/.test(v)) setForm(f => ({ ...f, pin: v })) }}
                   placeholder="Leave blank for no PIN" />
@@ -235,13 +248,7 @@ function KidsTab({ kids, onRefresh }) {
         <div style={CARD} className="mb-4">
           <div className="text-white font-black mb-3">New Kid</div>
           <Input label="Name" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="Kid's name..." />
-          <div className="grid grid-cols-2 gap-x-4">
-            <ColorRow label="Card from" value={form.colorFrom} onChange={v => setForm(f => ({ ...f, colorFrom: v }))} />
-            <ColorRow label="Card to"   value={form.colorTo}   onChange={v => setForm(f => ({ ...f, colorTo: v }))} />
-            <ColorRow label="Tab from"  value={form.tabFrom}   onChange={v => setForm(f => ({ ...f, tabFrom: v }))} />
-            <ColorRow label="Tab to"    value={form.tabTo}     onChange={v => setForm(f => ({ ...f, tabTo: v }))} />
-            <ColorRow label="Accent colour" value={form.accentColor} onChange={v => setForm(f => ({ ...f, accentColor: v }))} />
-          </div>
+          <SwatchPicker value={form.accentColor} onChange={v => setForm(f => ({ ...f, accentColor: v }))} />
           <Input label="Tab PIN (4 digits, optional)" value={form.pin}
             onChange={v => { if (/^\d{0,4}$/.test(v)) setForm(f => ({ ...f, pin: v })) }}
             placeholder="Leave blank for no PIN" />

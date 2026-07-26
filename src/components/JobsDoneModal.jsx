@@ -25,7 +25,7 @@ export default function JobsDoneModal({ kid, onClose }) {
         transition={{ type: 'spring', stiffness: 380, damping: 26 }}
         className="rounded-3xl p-8 flex flex-col items-center gap-3 w-full max-w-xs"
         style={{
-          background: `linear-gradient(135deg, ${kid.color_from}, ${kid.color_to})`,
+          background: kid.accent_color || '#8b5cf6',
           boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
         }}
         onClick={e => e.stopPropagation()}

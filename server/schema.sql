@@ -2,10 +2,6 @@ CREATE TABLE IF NOT EXISTS kids (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   avatar_url TEXT,
-  color_from TEXT NOT NULL DEFAULT '#f472b6',
-  color_to TEXT NOT NULL DEFAULT '#a855f7',
-  tab_from TEXT NOT NULL DEFAULT '#e879f9',
-  tab_to TEXT NOT NULL DEFAULT '#9333ea',
   sort_order INT NOT NULL DEFAULT 0
 );
 
@@ -56,7 +52,6 @@ CREATE TABLE IF NOT EXISTS wheel_spins (
   spun_at TIMESTAMP DEFAULT NOW()
 );
 
-ALTER TABLE kids ADD COLUMN IF NOT EXISTS bg_color TEXT NOT NULL DEFAULT '#0f0524';
 ALTER TABLE kids ADD COLUMN IF NOT EXISTS pin TEXT;
 ALTER TABLE chores ADD COLUMN IF NOT EXISTS time_of_day TEXT NOT NULL DEFAULT 'both';
 ALTER TABLE daily_checks ADD COLUMN IF NOT EXISTS check_slot TEXT NOT NULL DEFAULT 'both';
@@ -96,6 +91,12 @@ BEGIN
   END IF;
 END $$;
 ALTER TABLE kids ADD COLUMN IF NOT EXISTS accent_color TEXT NOT NULL DEFAULT '#8b5cf6';
+
+-- Kid-level gradient fields fully replaced by the single accent_color
+ALTER TABLE kids DROP COLUMN IF EXISTS color_from;
+ALTER TABLE kids DROP COLUMN IF EXISTS color_to;
+ALTER TABLE kids DROP COLUMN IF EXISTS tab_from;
+ALTER TABLE kids DROP COLUMN IF EXISTS tab_to;
 
 -- completed_days / wheel_spins uniqueness must be per-account now, not global
 DO $$

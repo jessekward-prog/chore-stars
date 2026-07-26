@@ -152,7 +152,7 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
 
       {/* Kid's accent colour tint */}
       <div className="fixed inset-0 pointer-events-none"
-        style={{ background: kid.accent_color || '#8b5cf6', opacity: 0.14, transition: 'background 0.5s ease', zIndex: 1 }} />
+        style={{ background: kid.accent_color || '#8b5cf6', opacity: 0.1, transition: 'background 0.5s ease', zIndex: 1 }} />
 
       {/* Header */}
       <div className="relative z-10 text-center pt-6 pb-1 px-4">
@@ -233,7 +233,7 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
               onClick={() => switchKid(k.id)}
               className="flex-1 py-3 rounded-2xl text-xl flex items-center justify-center gap-2"
               style={isActive
-                ? { background: `linear-gradient(to right, ${k.tab_from}, ${k.tab_to})`, color: 'white', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }
+                ? { background: k.accent_color || '#8b5cf6', color: 'white', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }
                 : { background: 'rgba(0,0,0,0.15)', color: 'rgba(255,255,255,0.65)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }
               }
               whileTap={{ scale: 0.95 }}
@@ -266,7 +266,7 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
             {/* Kid header card */}
             <div
               className="rounded-3xl p-4 mb-4 mt-2"
-              style={{ background: `linear-gradient(135deg, ${kid.color_from}, ${kid.color_to})`, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+              style={{ background: kid.accent_color || '#8b5cf6', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
             >
               <div className="flex items-center gap-3 mb-3">
                 <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}>
