@@ -7,8 +7,12 @@ import AllDoneModal from './components/AllDoneModal'
 import JobsDoneModal from './components/JobsDoneModal'
 import PinModal from './components/PinModal'
 import SwitchKidModal from './components/SwitchKidModal'
+import MorningBackground from './components/MorningBackground'
 import { playAllDone } from './utils/sounds'
+import { haptics } from './utils/haptics.js'
 import * as api from './api.js'
+
+const NIGHT_BG = 'linear-gradient(160deg, #0f0524 0%, #1a0a3d 40%, #0d1a3d 100%)'
 
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri']
 
@@ -50,6 +54,7 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
     const checkSlot = chore?.time_of_day || 'both'
     const currentSet = checked.get(kidId) || new Set()
     const willCheck = !currentSet.has(choreId)
+    haptics.tap()
 
     if (willCheck && chore) {
       const currentDone = activeChores.filter(c => currentSet.has(c.id)).length
@@ -65,7 +70,7 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
 
         if (wouldAllDone && isWeekday && !completedDays.has(todayKey)) {
           markDayComplete(todayKey)
-          setTimeout(() => { playAllDone(); setShowDayModal(true) }, 400)
+          setTimeout(() => { playAllDone(); haptics.success(); setShowDayModal(true) }, 400)
         } else {
           setTimeout(() => { setJobsDoneKidId(kidId); setShowJobsDoneModal(true) }, 400)
         }
@@ -123,22 +128,31 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
   const jobsDoneKid = jobsDoneKidId ? kids.find(k => k.id === jobsDoneKidId) : null
+  const showMorningScene = hasTimedChores && timeSlot === 'morning'
 
   return (
     <div
       className="min-h-screen w-full flex flex-col"
-      style={{ backgroundColor: kid.bg_color || '#0f0524', transition: 'background-color 0.5s ease', fontFamily: "'Nunito', sans-serif" }}
+      style={{ background: showMorningScene ? 'transparent' : NIGHT_BG, fontFamily: "'Nunito', sans-serif" }}
     >
-      {/* Twinkling stars */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {Array.from({ length: 30 }).map((_, i) => (
-          <motion.div key={i} className="absolute rounded-full bg-white"
-            style={{ width: (i % 3) + 1, height: (i % 3) + 1, left: `${(i * 37) % 100}%`, top: `${(i * 53) % 100}%`, opacity: 0.3 }}
-            animate={{ opacity: [0.1, 0.7, 0.1] }}
-            transition={{ duration: 2 + (i % 4), repeat: Infinity, delay: (i * 0.3) % 3 }}
-          />
-        ))}
-      </div>
+      {showMorningScene ? (
+        <MorningBackground />
+      ) : (
+        /* Twinkling stars */
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <motion.div key={i} className="absolute rounded-full bg-white"
+              style={{ width: (i % 3) + 1, height: (i % 3) + 1, left: `${(i * 37) % 100}%`, top: `${(i * 53) % 100}%`, opacity: 0.3 }}
+              animate={{ opacity: [0.1, 0.7, 0.1] }}
+              transition={{ duration: 2 + (i % 4), repeat: Infinity, delay: (i * 0.3) % 3 }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Kid's accent colour tint */}
+      <div className="fixed inset-0 pointer-events-none"
+        style={{ background: kid.accent_color || '#8b5cf6', opacity: 0.14, transition: 'background 0.5s ease', zIndex: 1 }} />
 
       {/* Header */}
       <div className="relative z-10 text-center pt-6 pb-1 px-4">
@@ -404,5 +418,5 @@ function KidAvatar({ kid, size }) {
   if (kid.avatar_url) {
     return <div style={style}><img src={kid.avatar_url} alt={kid.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
   }
-  return <div style={{ ...style, background: `linear-gradient(135deg, ${kid.color_from}, ${kid.color_to})` }}>{kid.name[0]}</div>
+  return <div style={{ ...style, background: kid.accent_color || '#8b5cf6' }}>{kid.name[0]}</div>
 }

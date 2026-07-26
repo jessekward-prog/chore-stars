@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import * as api from '../api.js'
 
-export function useAppState() {
+export function useAppState(enabled = true) {
   const [state, setState] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -19,7 +19,6 @@ export function useAppState() {
         ...data,
         checked: checkedMap,
         completedDays: new Set(data.completedDays),
-        setupComplete: data.setupComplete ?? true,
       })
     } catch (e) {
       setError(e.message)
@@ -28,7 +27,7 @@ export function useAppState() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { if (enabled) load() }, [enabled, load])
 
   const toggle = useCallback((kidId, choreId, checkSlot) => {
     setState(prev => {

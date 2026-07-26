@@ -69,3 +69,47 @@ BEGIN
     ALTER TABLE daily_checks ADD CONSTRAINT daily_checks_slot_unique UNIQUE(kid_id, chore_id, check_date, check_slot);
   END IF;
 END $$;
+
+-- ── Multi-tenant accounts ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  pin_hash TEXT NOT NULL,
+  setup_complete BOOLEAN NOT NULL DEFAULT TRUE,
+  intro_seen BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+ALTER TABLE kids ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE chores ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE prizes ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE daily_checks ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE completed_days ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE wheel_spins ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE;
+
+-- bg_color (full background picker) replaced by a single accent_color
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'kids' AND column_name = 'bg_color')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'kids' AND column_name = 'accent_color') THEN
+    ALTER TABLE kids RENAME COLUMN bg_color TO accent_color;
+  END IF;
+END $$;
+ALTER TABLE kids ADD COLUMN IF NOT EXISTS accent_color TEXT NOT NULL DEFAULT '#8b5cf6';
+
+-- completed_days / wheel_spins uniqueness must be per-account now, not global
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'completed_days_day_key_week_start_key' AND conrelid = 'completed_days'::regclass) THEN
+    ALTER TABLE completed_days DROP CONSTRAINT completed_days_day_key_week_start_key;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'completed_days_user_unique' AND conrelid = 'completed_days'::regclass) THEN
+    ALTER TABLE completed_days ADD CONSTRAINT completed_days_user_unique UNIQUE(day_key, week_start, user_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'wheel_spins_week_start_key' AND conrelid = 'wheel_spins'::regclass) THEN
+    ALTER TABLE wheel_spins DROP CONSTRAINT wheel_spins_week_start_key;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'wheel_spins_user_unique' AND conrelid = 'wheel_spins'::regclass) THEN
+    ALTER TABLE wheel_spins ADD CONSTRAINT wheel_spins_user_unique UNIQUE(week_start, user_id);
+  END IF;
+END $$;

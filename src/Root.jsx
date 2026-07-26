@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAppState } from './hooks/useAppState.js'
 import WelcomeScreen from './WelcomeScreen.jsx'
-import SetupWizard from './SetupWizard.jsx'
+import LoginScreen from './LoginScreen.jsx'
 import App from './App.jsx'
 import ParentSettings from './ParentSettings.jsx'
 import SwitchKidModal from './components/SwitchKidModal.jsx'
+import AppIntroModal from './components/AppIntroModal.jsx'
+import * as api from './api.js'
 
 function LoadingScreen() {
   return (
@@ -41,26 +43,50 @@ function ErrorScreen({ error, onRetry }) {
 }
 
 export default function Root() {
-  const { state, loading, error, toggle, markDayComplete, markWheelSpun, refresh } = useAppState()
+  const [authLoading, setAuthLoading] = useState(true)
+  const [auth, setAuth] = useState(null)
+  const [showIntro, setShowIntro] = useState(false)
+
+  const refreshAuth = useCallback(() => {
+    return api.getAuthStatus().then(setAuth).catch(() => setAuth({ loggedIn: false }))
+  }, [])
+
+  useEffect(() => {
+    refreshAuth().finally(() => setAuthLoading(false))
+  }, [refreshAuth])
+
+  useEffect(() => {
+    if (auth?.loggedIn && !auth.introSeen) setShowIntro(true)
+  }, [auth])
+
+  const { state, loading, error, toggle, markDayComplete, markWheelSpun, refresh } = useAppState(!!auth?.loggedIn)
   const [screen, setScreen] = useState('welcome')
   const [isParent, setIsParent] = useState(false)
   const [showStartPin, setShowStartPin] = useState(false)
   const [startKidId, setStartKidId] = useState(null)
 
+  if (authLoading) return <LoadingScreen />
+
+  if (!auth?.loggedIn) {
+    return <LoginScreen onSuccess={() => refreshAuth().then(() => setScreen('welcome'))} />
+  }
+
+  const closeIntro = () => {
+    setShowIntro(false)
+    api.seenIntro().then(() => setAuth(a => ({ ...a, introSeen: true })))
+  }
+
   if (loading) return <LoadingScreen />
   if (error) return <ErrorScreen error={error} onRetry={refresh} />
 
-  if (!state.setupComplete) {
-    return <SetupWizard prizes={state.prizes} onComplete={refresh} />
-  }
-
+  let screenEl
   if (screen === 'welcome') {
     const hasPins = state.kids.some(k => k.pin)
     const handleStart = () => {
       if (hasPins) { setShowStartPin(true) }
       else { setScreen('app') }
     }
-    return (
+    screenEl = (
       <>
         <WelcomeScreen kids={state.kids} onStart={handleStart} />
         <AnimatePresence>
@@ -75,29 +101,38 @@ export default function Root() {
         </AnimatePresence>
       </>
     )
-  }
-
-  if (screen === 'parent') {
-    return (
+  } else if (screen === 'parent') {
+    screenEl = (
       <ParentSettings
         state={state}
         isParent={isParent}
         setIsParent={setIsParent}
         onClose={() => setScreen('app')}
         onRefresh={refresh}
+        onShowIntro={() => setShowIntro(true)}
+        onLoggedOut={() => refreshAuth()}
+      />
+    )
+  } else {
+    screenEl = (
+      <App
+        state={state}
+        toggle={toggle}
+        markDayComplete={markDayComplete}
+        markWheelSpun={markWheelSpun}
+        refresh={refresh}
+        onOpenParent={() => setScreen('parent')}
+        initialKidId={startKidId}
       />
     )
   }
 
   return (
-    <App
-      state={state}
-      toggle={toggle}
-      markDayComplete={markDayComplete}
-      markWheelSpun={markWheelSpun}
-      refresh={refresh}
-      onOpenParent={() => setScreen('parent')}
-      initialKidId={startKidId}
-    />
+    <>
+      {screenEl}
+      <AnimatePresence>
+        {showIntro && <AppIntroModal onClose={closeIntro} />}
+      </AnimatePresence>
+    </>
   )
 }

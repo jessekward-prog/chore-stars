@@ -1,9 +1,12 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as api from './api.js'
+import { haptics } from './utils/haptics.js'
+import ConfirmModal from './components/ConfirmModal.jsx'
 
 const PANEL_BG = 'linear-gradient(160deg, #0f0524 0%, #1a0a3d 40%, #0d1a3d 100%)'
 const CARD = { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 16 }
+const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, 'del']
 
 function Input({ label, value, onChange, type = 'text', placeholder }) {
   return (
@@ -49,21 +52,36 @@ function Btn({ children, onClick, danger, disabled, small }) {
 
 // ── Login prompt ───────────────────────────────────────────────────────────────
 function LoginPrompt({ onSuccess }) {
-  const [pw, setPw] = useState('')
+  const [pin, setPin] = useState('')
+  const [shake, setShake] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const submit = async () => {
-    if (!pw) return
+  const submit = async (fullPin) => {
     setLoading(true); setError('')
     try {
-      await api.login(pw)
+      await api.verifyPin(fullPin)
+      haptics.success()
       onSuccess()
     } catch {
-      setError('Wrong password. Try again.')
+      haptics.error()
+      setError('Wrong PIN. Try again.')
+      setShake(true)
+      setTimeout(() => { setShake(false); setPin('') }, 500)
     } finally {
       setLoading(false)
     }
+  }
+
+  const press = (d) => {
+    if (loading) return
+    if (d === 'del') { setPin(p => p.slice(0, -1)); return }
+    if (d === null) return
+    haptics.tap()
+    const next = pin + String(d)
+    if (next.length > 4) return
+    setPin(next)
+    if (next.length === 4) submit(next)
   }
 
   return (
@@ -75,16 +93,39 @@ function LoginPrompt({ onSuccess }) {
       <div className="text-white text-2xl mb-2" style={{ fontFamily: "'Fredoka One', cursive" }}>
         Grown-Ups Only
       </div>
-      <div className="text-white/40 text-sm mb-8">Default password: <span className="text-yellow-300">stars123</span></div>
-      <div className="w-full max-w-xs">
-        <Input type="password" value={pw} onChange={setPw} placeholder="Enter password..." />
-        {error && <div className="text-red-400 text-sm mb-3">{error}</div>}
-        <button onClick={submit} disabled={loading}
-          className="w-full py-3 rounded-2xl text-white text-lg font-black"
-          style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', fontFamily: "'Fredoka One', cursive" }}
-        >
-          {loading ? 'Checking...' : '🔓 Unlock'}
-        </button>
+      <div className="text-white/40 text-sm mb-6">Enter your account PIN</div>
+
+      <motion.div
+        animate={shake ? { x: [-10, 10, -10, 10, 0] } : {}}
+        transition={shake ? { duration: 0.4 } : {}}
+        className="flex gap-4 mb-6"
+      >
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} className="w-4 h-4 rounded-full"
+            style={{ background: i < pin.length ? '#a78bfa' : 'rgba(255,255,255,0.15)' }} />
+        ))}
+      </motion.div>
+
+      {error && <div className="text-red-400 text-sm mb-3">{error}</div>}
+
+      <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
+        {DIGITS.map((d, i) => (
+          <motion.button
+            key={i}
+            onClick={() => press(d)}
+            disabled={d === null || loading}
+            className="h-14 rounded-2xl text-white text-xl font-black flex items-center justify-center"
+            style={{
+              background: d === null ? 'transparent' : 'rgba(255,255,255,0.1)',
+              border: d === null ? 'none' : '1px solid rgba(255,255,255,0.15)',
+              color: d === 'del' ? 'rgba(255,255,255,0.5)' : 'white',
+              fontFamily: "'Fredoka One', cursive",
+            }}
+            whileTap={d !== null ? { scale: 0.88 } : {}}
+          >
+            {d === 'del' ? '⌫' : d === null ? '' : d}
+          </motion.button>
+        ))}
       </div>
     </div>
   )
@@ -98,17 +139,18 @@ function KidsTab({ kids, onRefresh }) {
   const [saving, setSaving] = useState(false)
   const fileRef = useRef(null)
   const [uploading, setUploading] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   const startEdit = (kid) => {
     setAdding(false)
     setEditing(kid.id)
-    setForm({ name: kid.name, colorFrom: kid.color_from, colorTo: kid.color_to, tabFrom: kid.tab_from, tabTo: kid.tab_to, bgColor: kid.bg_color || '#0f0524', pin: kid.pin || '' })
+    setForm({ name: kid.name, colorFrom: kid.color_from, colorTo: kid.color_to, tabFrom: kid.tab_from, tabTo: kid.tab_to, accentColor: kid.accent_color || '#8b5cf6', pin: kid.pin || '' })
   }
 
   const startAdd = () => {
     setEditing(null)
     setAdding(true)
-    setForm({ name: '', colorFrom: '#f472b6', colorTo: '#a855f7', tabFrom: '#e879f9', tabTo: '#9333ea', bgColor: '#0f0524', pin: '' })
+    setForm({ name: '', colorFrom: '#f472b6', colorTo: '#a855f7', tabFrom: '#e879f9', tabTo: '#9333ea', accentColor: '#8b5cf6', pin: '' })
   }
 
   const cancel = () => { setEditing(null); setAdding(false) }
@@ -124,7 +166,6 @@ function KidsTab({ kids, onRefresh }) {
   }
 
   const del = async (id) => {
-    if (!confirm('Remove this kid?')) return
     await api.deleteKid(id); onRefresh()
   }
 
@@ -163,7 +204,7 @@ function KidsTab({ kids, onRefresh }) {
                   {uploading === kid.id ? '...' : '📷'}
                 </Btn>
                 <Btn small onClick={() => startEdit(kid)}>Edit</Btn>
-                <Btn small danger onClick={() => del(kid.id)}>Del</Btn>
+                <Btn small danger onClick={() => setConfirmDeleteId(kid.id)}>Del</Btn>
               </div>
             </div>
 
@@ -175,7 +216,7 @@ function KidsTab({ kids, onRefresh }) {
                   <ColorRow label="Card to"       value={form.colorTo}   onChange={v => setForm(f => ({ ...f, colorTo: v }))} />
                   <ColorRow label="Tab from"      value={form.tabFrom}   onChange={v => setForm(f => ({ ...f, tabFrom: v }))} />
                   <ColorRow label="Tab to"        value={form.tabTo}     onChange={v => setForm(f => ({ ...f, tabTo: v }))} />
-                  <ColorRow label="Background"    value={form.bgColor}   onChange={v => setForm(f => ({ ...f, bgColor: v }))} />
+                  <ColorRow label="Accent colour" value={form.accentColor} onChange={v => setForm(f => ({ ...f, accentColor: v }))} />
                 </div>
                 <Input label="Tab PIN (4 digits, optional)" value={form.pin}
                   onChange={v => { if (/^\d{0,4}$/.test(v)) setForm(f => ({ ...f, pin: v })) }}
@@ -199,7 +240,7 @@ function KidsTab({ kids, onRefresh }) {
             <ColorRow label="Card to"   value={form.colorTo}   onChange={v => setForm(f => ({ ...f, colorTo: v }))} />
             <ColorRow label="Tab from"  value={form.tabFrom}   onChange={v => setForm(f => ({ ...f, tabFrom: v }))} />
             <ColorRow label="Tab to"    value={form.tabTo}     onChange={v => setForm(f => ({ ...f, tabTo: v }))} />
-            <ColorRow label="Background" value={form.bgColor}  onChange={v => setForm(f => ({ ...f, bgColor: v }))} />
+            <ColorRow label="Accent colour" value={form.accentColor} onChange={v => setForm(f => ({ ...f, accentColor: v }))} />
           </div>
           <Input label="Tab PIN (4 digits, optional)" value={form.pin}
             onChange={v => { if (/^\d{0,4}$/.test(v)) setForm(f => ({ ...f, pin: v })) }}
@@ -212,6 +253,16 @@ function KidsTab({ kids, onRefresh }) {
       )}
 
       {!adding && <Btn onClick={startAdd}>+ Add Kid</Btn>}
+
+      <AnimatePresence>
+        {confirmDeleteId != null && (
+          <ConfirmModal
+            text="Remove this kid?"
+            onConfirm={() => { del(confirmDeleteId); setConfirmDeleteId(null) }}
+            onCancel={() => setConfirmDeleteId(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -222,6 +273,7 @@ function ChoresTab({ chores, onRefresh }) {
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   const EMPTY = { emoji: '⭐', label: '', colorFrom: '#facc15', colorTo: '#f97316', checkedFrom: '#b45309', checkedTo: '#c2410c', checkColor: '#ea580c', timeOfDay: 'both' }
 
@@ -243,7 +295,6 @@ function ChoresTab({ chores, onRefresh }) {
   }
 
   const del = async (id) => {
-    if (!confirm('Delete this chore?')) return
     await api.deleteChore(id); onRefresh()
   }
 
@@ -308,7 +359,7 @@ function ChoresTab({ chores, onRefresh }) {
         <div className="flex gap-2">
           <Btn small onClick={() => toggleActive(c)}>{c.active ? 'Hide' : 'Show'}</Btn>
           <Btn small onClick={() => startEdit(c)}>Edit</Btn>
-          <Btn small danger onClick={() => del(c.id)}>Del</Btn>
+          <Btn small danger onClick={() => setConfirmDeleteId(c.id)}>Del</Btn>
         </div>
       </div>
       {editing === c.id && (
@@ -370,6 +421,16 @@ function ChoresTab({ chores, onRefresh }) {
       )}
 
       {!adding && <Btn onClick={startAdd}>+ Add Chore</Btn>}
+
+      <AnimatePresence>
+        {confirmDeleteId != null && (
+          <ConfirmModal
+            text="Delete this chore?"
+            onConfirm={() => { del(confirmDeleteId); setConfirmDeleteId(null) }}
+            onCancel={() => setConfirmDeleteId(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -413,19 +474,19 @@ function PrizesTab({ prizes, onRefresh }) {
 
 // ── Security tab ───────────────────────────────────────────────────────────────
 function SecurityTab({ onLogout }) {
-  const [pw, setPw] = useState('')
+  const [pin, setPin] = useState('')
   const [confirm, setConfirm] = useState('')
   const [msg, setMsg] = useState(null)
   const [saving, setSaving] = useState(false)
 
   const save = async () => {
-    if (pw.length < 4) return setMsg({ ok: false, text: 'At least 4 characters' })
-    if (pw !== confirm) return setMsg({ ok: false, text: "Passwords don't match" })
+    if (!/^\d{4}$/.test(pin)) return setMsg({ ok: false, text: 'PIN must be 4 digits' })
+    if (pin !== confirm) return setMsg({ ok: false, text: "PINs don't match" })
     setSaving(true); setMsg(null)
     try {
-      await api.changePassword(pw)
-      setPw(''); setConfirm('')
-      setMsg({ ok: true, text: 'Password changed!' })
+      await api.changePin(pin)
+      setPin(''); setConfirm('')
+      setMsg({ ok: true, text: 'PIN changed!' })
     } catch (e) {
       setMsg({ ok: false, text: e.message })
     } finally { setSaving(false) }
@@ -436,14 +497,16 @@ function SecurityTab({ onLogout }) {
     onLogout()
   }
 
+  const onlyDigits = setter => v => { if (/^\d{0,4}$/.test(v)) setter(v) }
+
   return (
     <div style={CARD}>
-      <div className="text-white font-black mb-4">Change Parent Password</div>
-      <Input label="New password" type="password" value={pw} onChange={setPw} placeholder="New password..." />
-      <Input label="Confirm" type="password" value={confirm} onChange={setConfirm} placeholder="Repeat password..." />
+      <div className="text-white font-black mb-4">Change Account PIN</div>
+      <Input label="New PIN (4 digits)" type="password" value={pin} onChange={onlyDigits(setPin)} placeholder="New PIN..." />
+      <Input label="Confirm" type="password" value={confirm} onChange={onlyDigits(setConfirm)} placeholder="Repeat PIN..." />
       {msg && <div className={`text-sm mb-3 ${msg.ok ? 'text-green-400' : 'text-red-400'}`}>{msg.text}</div>}
       <div className="flex gap-3 mt-2">
-        <Btn onClick={save} disabled={saving || !pw}>{saving ? 'Saving...' : 'Change Password'}</Btn>
+        <Btn onClick={save} disabled={saving || !pin}>{saving ? 'Saving...' : 'Change PIN'}</Btn>
         <Btn danger onClick={handleLogout}>Log Out</Btn>
       </div>
     </div>
@@ -453,7 +516,7 @@ function SecurityTab({ onLogout }) {
 // ── Main component ─────────────────────────────────────────────────────────────
 const TABS = ['Kids', 'Chores', 'Prizes', 'Security']
 
-export default function ParentSettings({ state, isParent, setIsParent, onClose, onRefresh }) {
+export default function ParentSettings({ state, isParent, setIsParent, onClose, onRefresh, onShowIntro, onLoggedOut }) {
   const [tab, setTab] = useState('Kids')
 
   if (!isParent) {
@@ -466,9 +529,14 @@ export default function ParentSettings({ state, isParent, setIsParent, onClose, 
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-6 pb-4">
         <button onClick={onClose} className="text-white/50 text-2xl hover:text-white" style={{ lineHeight: 1 }}>←</button>
-        <div className="text-white text-2xl" style={{ fontFamily: "'Fredoka One', cursive" }}>
+        <div className="text-white text-2xl flex-1" style={{ fontFamily: "'Fredoka One', cursive" }}>
           🔒 Parent Settings
         </div>
+        <button onClick={onShowIntro}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-white/50 hover:text-white text-lg font-black"
+          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+          ⓘ
+        </button>
       </div>
 
       {/* Tabs */}
@@ -497,7 +565,7 @@ export default function ParentSettings({ state, isParent, setIsParent, onClose, 
             {tab === 'Kids'     && <KidsTab     kids={state.kids}     onRefresh={onRefresh} />}
             {tab === 'Chores'   && <ChoresTab   chores={state.chores} onRefresh={onRefresh} />}
             {tab === 'Prizes'   && <PrizesTab   prizes={state.prizes} onRefresh={onRefresh} />}
-            {tab === 'Security' && <SecurityTab onLogout={() => { setIsParent(false); onClose() }} />}
+            {tab === 'Security' && <SecurityTab onLogout={() => { setIsParent(false); onLoggedOut() }} />}
           </motion.div>
         </AnimatePresence>
       </div>

@@ -51,7 +51,7 @@ export default function PinModal({ kid, onSuccess, onCancel }) {
         <div className="flex flex-col items-center gap-2">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl font-black text-white overflow-hidden flex-shrink-0"
-            style={{ background: `linear-gradient(135deg, ${kid.color_from}, ${kid.color_to})` }}
+            style={{ background: kid.accent_color || '#8b5cf6' }}
           >
             {kid.avatar_url
               ? <img src={kid.avatar_url} alt={kid.name} className="w-full h-full object-cover" />

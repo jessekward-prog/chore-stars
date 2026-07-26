@@ -62,7 +62,7 @@ export default function WelcomeScreen({ kids, onStart }) {
           >
             <motion.div
               className="w-28 h-28 rounded-3xl flex items-center justify-center text-6xl shadow-2xl"
-              style={{ background: `linear-gradient(135deg, ${kid.color_from}, ${kid.color_to})` }}
+              style={{ background: kid.accent_color || '#8b5cf6' }}
               animate={{ y: [0, -8, 0] }}
               transition={{ duration: 2.5 + i * 0.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
             >
