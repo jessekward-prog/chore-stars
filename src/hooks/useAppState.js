@@ -30,7 +30,7 @@ export function useAppState() {
 
   useEffect(() => { load() }, [load])
 
-  const toggle = useCallback((kidId, choreId) => {
+  const toggle = useCallback((kidId, choreId, checkSlot) => {
     setState(prev => {
       if (!prev) return prev
       const newChecked = new Map(prev.checked)
@@ -40,7 +40,7 @@ export function useAppState() {
       newChecked.set(kidId, kidSet)
       return { ...prev, checked: newChecked }
     })
-    api.toggleChore(kidId, choreId).catch(console.error)
+    api.toggleChore(kidId, choreId, checkSlot).catch(console.error)
   }, [])
 
   const markDayComplete = useCallback((dayKey) => {

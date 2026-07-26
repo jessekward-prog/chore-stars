@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAppState } from './hooks/useAppState.js'
 import WelcomeScreen from './WelcomeScreen.jsx'
 import SetupWizard from './SetupWizard.jsx'
 import App from './App.jsx'
 import ParentSettings from './ParentSettings.jsx'
+import SwitchKidModal from './components/SwitchKidModal.jsx'
 
 function LoadingScreen() {
   return (
@@ -43,6 +44,8 @@ export default function Root() {
   const { state, loading, error, toggle, markDayComplete, markWheelSpun, refresh } = useAppState()
   const [screen, setScreen] = useState('welcome')
   const [isParent, setIsParent] = useState(false)
+  const [showStartPin, setShowStartPin] = useState(false)
+  const [startKidId, setStartKidId] = useState(null)
 
   if (loading) return <LoadingScreen />
   if (error) return <ErrorScreen error={error} onRetry={refresh} />
@@ -52,7 +55,26 @@ export default function Root() {
   }
 
   if (screen === 'welcome') {
-    return <WelcomeScreen kids={state.kids} onStart={() => setScreen('app')} />
+    const hasPins = state.kids.some(k => k.pin)
+    const handleStart = () => {
+      if (hasPins) { setShowStartPin(true) }
+      else { setScreen('app') }
+    }
+    return (
+      <>
+        <WelcomeScreen kids={state.kids} onStart={handleStart} />
+        <AnimatePresence>
+          {showStartPin && (
+            <SwitchKidModal
+              kids={state.kids}
+              onSuccess={(kidId) => { setStartKidId(kidId); setShowStartPin(false); setScreen('app') }}
+              onCancel={() => setShowStartPin(false)}
+              canCancel
+            />
+          )}
+        </AnimatePresence>
+      </>
+    )
   }
 
   if (screen === 'parent') {
@@ -75,6 +97,7 @@ export default function Root() {
       markWheelSpun={markWheelSpun}
       refresh={refresh}
       onOpenParent={() => setScreen('parent')}
+      initialKidId={startKidId}
     />
   )
 }

@@ -4,6 +4,9 @@ import ChoreItem from './components/ChoreItem'
 import WeekTracker from './components/WeekTracker'
 import DayCompleteModal from './components/DayCompleteModal'
 import AllDoneModal from './components/AllDoneModal'
+import JobsDoneModal from './components/JobsDoneModal'
+import PinModal from './components/PinModal'
+import SwitchKidModal from './components/SwitchKidModal'
 import { playAllDone } from './utils/sounds'
 import * as api from './api.js'
 
@@ -13,37 +16,64 @@ function getTodayKey() {
   return ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date().getDay()]
 }
 
-export default function App({ state, toggle, markDayComplete, markWheelSpun, refresh, onOpenParent }) {
+function getTimeSlot() {
+  return new Date().getHours() < 12 ? 'morning' : 'evening'
+}
+
+export default function App({ state, toggle, markDayComplete, markWheelSpun, refresh, onOpenParent, initialKidId }) {
   const { kids, chores, prizes, checked, completedDays, wheelSpun } = state
 
-  const [activeKidId, setActiveKidId] = useState(kids[0]?.id ?? null)
+  const [activeKidId, setActiveKidId] = useState(initialKidId ?? kids[0]?.id ?? null)
   const [showDayModal, setShowDayModal] = useState(false)
   const [showWheelModal, setShowWheelModal] = useState(false)
+  const [showJobsDoneModal, setShowJobsDoneModal] = useState(false)
+  const [jobsDoneKidId, setJobsDoneKidId] = useState(null)
+  const [pinTargetKidId, setPinTargetKidId] = useState(null)
+  const [showSwitchModal, setShowSwitchModal] = useState(false)
   const [direction, setDirection] = useState(1)
 
   const todayKey = getTodayKey()
   const isWeekday = WEEKDAYS.includes(todayKey)
   const canSpin = completedDays.size === 5 && !wheelSpun
 
+  const timeSlot = getTimeSlot()
+  const activeChores = chores.filter(c => c.time_of_day === timeSlot || c.time_of_day === 'both')
+  const hasTimedChores = chores.some(c => c.time_of_day !== 'both')
+
+  const kidActiveCount = (kidId) => {
+    const s = checked.get(kidId) || new Set()
+    return activeChores.filter(c => s.has(c.id)).length
+  }
+
   const handleToggle = (kidId, choreId) => {
+    const chore = activeChores.find(c => c.id === choreId)
+    const checkSlot = chore?.time_of_day || 'both'
     const currentSet = checked.get(kidId) || new Set()
     const willCheck = !currentSet.has(choreId)
 
-    if (willCheck) {
-      const futureSet = new Set(currentSet)
-      futureSet.add(choreId)
-      const wouldBothDone = futureSet.size === chores.length &&
-        kids.every(k => k.id === kidId || (checked.get(k.id)?.size ?? 0) === chores.length)
+    if (willCheck && chore) {
+      const currentDone = activeChores.filter(c => currentSet.has(c.id)).length
+      const willBeDone = currentDone + 1 === activeChores.length
 
-      if (wouldBothDone && isWeekday && !completedDays.has(todayKey)) {
-        toggle(kidId, choreId)
-        markDayComplete(todayKey)
-        setTimeout(() => { playAllDone(); setShowDayModal(true) }, 400)
+      if (willBeDone && activeChores.length > 0) {
+        const wouldAllDone = kids.every(k => {
+          if (k.id === kidId) return true
+          return kidActiveCount(k.id) === activeChores.length
+        })
+
+        toggle(kidId, choreId, checkSlot)
+
+        if (wouldAllDone && isWeekday && !completedDays.has(todayKey)) {
+          markDayComplete(todayKey)
+          setTimeout(() => { playAllDone(); setShowDayModal(true) }, 400)
+        } else {
+          setTimeout(() => { setJobsDoneKidId(kidId); setShowJobsDoneModal(true) }, 400)
+        }
         return
       }
     }
 
-    toggle(kidId, choreId)
+    toggle(kidId, choreId, checkSlot)
   }
 
   const resetDay = async () => {
@@ -52,6 +82,16 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
   }
 
   const switchKid = (kidId) => {
+    if (kidId === activeKidId) return
+    const targetKid = kids.find(k => k.id === kidId)
+    if (targetKid?.pin) {
+      setPinTargetKidId(kidId)
+      return
+    }
+    doSwitch(kidId)
+  }
+
+  const doSwitch = (kidId) => {
     const ci = kids.findIndex(k => k.id === activeKidId)
     const ni = kids.findIndex(k => k.id === kidId)
     setDirection(ni > ci ? 1 : -1)
@@ -77,15 +117,17 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
 
   const kid = kids.find(k => k.id === activeKidId) || kids[0]
   const kidChecked = checked.get(kid.id) || new Set()
-  const progress = kidChecked.size
-  const total = chores.length
+  const progress = activeChores.filter(c => kidChecked.has(c.id)).length
+  const total = activeChores.length
   const pct = total > 0 ? Math.round((progress / total) * 100) : 0
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+
+  const jobsDoneKid = jobsDoneKidId ? kids.find(k => k.id === jobsDoneKidId) : null
 
   return (
     <div
       className="min-h-screen w-full flex flex-col"
-      style={{ background: 'linear-gradient(160deg, #0f0524 0%, #1a0a3d 40%, #0d1a3d 100%)', fontFamily: "'Nunito', sans-serif" }}
+      style={{ backgroundColor: kid.bg_color || '#0f0524', transition: 'background-color 0.5s ease', fontFamily: "'Nunito', sans-serif" }}
     >
       {/* Twinkling stars */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -109,7 +151,6 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
           >
             ⭐ Chore Stars ⭐
           </motion.div>
-          {/* Parent settings lock */}
           <button onClick={onOpenParent}
             className="absolute right-0 text-white/30 hover:text-white/70 text-xl transition-colors"
             style={{ lineHeight: 1 }}>
@@ -123,7 +164,7 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
       <div className="relative z-10 px-4 pt-3 pb-1">
         <div
           className="rounded-2xl px-4 py-3"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+          style={{ background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.12)', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}
         >
           <div className="text-white/40 text-xs font-black text-center mb-2 tracking-widest uppercase">
             This Week
@@ -152,9 +193,26 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
 
       {/* Kid tabs */}
       <div className="relative z-10 flex gap-3 px-4 pt-3 pb-1">
+        {kids.some(k => k.pin) && (
+          <motion.button
+            onClick={() => setShowSwitchModal(true)}
+            className="flex items-center justify-center rounded-2xl text-2xl flex-shrink-0"
+            style={{
+              width: 56, height: 56,
+              background: 'rgba(0,0,0,0.25)',
+              border: '2px solid rgba(255,255,255,0.2)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            }}
+            whileTap={{ scale: 0.9 }}
+            animate={{ boxShadow: ['0 4px 16px rgba(139,92,246,0.2)', '0 4px 24px rgba(139,92,246,0.6)', '0 4px 16px rgba(139,92,246,0.2)'] }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+          >
+            🔒
+          </motion.button>
+        )}
         {kids.map((k) => {
           const isActive = k.id === activeKidId
-          const kidDone = (checked.get(k.id)?.size ?? 0) === chores.length && chores.length > 0
+          const kidDone = activeChores.length > 0 && kidActiveCount(k.id) === activeChores.length
           return (
             <motion.button
               key={k.id}
@@ -162,16 +220,19 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
               className="flex-1 py-3 rounded-2xl text-xl flex items-center justify-center gap-2"
               style={isActive
                 ? { background: `linear-gradient(to right, ${k.tab_from}, ${k.tab_to})`, color: 'white', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }
-                : { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }
+                : { background: 'rgba(0,0,0,0.15)', color: 'rgba(255,255,255,0.65)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }
               }
               whileTap={{ scale: 0.95 }}
             >
               <KidAvatar kid={k} size={28} />
               <span style={{ fontFamily: "'Fredoka One', cursive" }}>{k.name}</span>
               {kidDone && (
-                <motion.span animate={{ rotate: [0, 20, -20, 0], scale: [1, 1.3, 1] }}
-                  transition={{ duration: 1, repeat: Infinity, repeatDelay: 1 }}
-                  className="text-yellow-300">✓</motion.span>
+                <motion.span
+                  animate={{ scale: [1, 1.35, 1], rotate: [-5, 5, -5] }}
+                  transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 0.8 }}
+                >
+                  🏆
+                </motion.span>
               )}
             </motion.button>
           )
@@ -206,7 +267,7 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
                   </div>
                 </div>
                 <div className="ml-auto flex gap-1 flex-wrap justify-end" style={{ maxWidth: 80 }}>
-                  {chores.map((_, i) => (
+                  {activeChores.map((_, i) => (
                     <motion.div key={i}
                       className={`w-3 h-3 rounded-full ${i < progress ? 'bg-yellow-300' : 'bg-white/25'}`}
                       animate={i < progress ? { scale: [1, 1.4, 1] } : {}}
@@ -233,18 +294,11 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
 
             {/* Chore list */}
             <div className="flex flex-col gap-3">
-              {chores.map((chore, i) => (
-                <motion.div key={chore.id}
-                  initial={{ x: -30, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: i * 0.05, type: 'spring', stiffness: 400 }}
-                >
-                  <ChoreItem
-                    chore={chore}
-                    checked={kidChecked.has(chore.id)}
-                    onToggle={() => handleToggle(kid.id, chore.id)}
-                  />
-                </motion.div>
+              {hasTimedChores && (
+                <ChoreSection label={timeSlot === 'morning' ? '🌅 Morning Chores' : '🌙 Evening Chores'} />
+              )}
+              {activeChores.map((chore, i) => (
+                <ChoreRow key={chore.id} chore={chore} i={i} kidChecked={kidChecked} kidId={kid.id} handleToggle={handleToggle} />
               ))}
             </div>
 
@@ -261,6 +315,29 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
 
       {/* Modals */}
       <AnimatePresence>
+        {showSwitchModal && (
+          <SwitchKidModal
+            key="switch"
+            kids={kids}
+            onSuccess={(kidId) => { setShowSwitchModal(false); doSwitch(kidId) }}
+            onCancel={() => setShowSwitchModal(false)}
+          />
+        )}
+        {pinTargetKidId && (
+          <PinModal
+            key="pin"
+            kid={kids.find(k => k.id === pinTargetKidId)}
+            onSuccess={() => { const id = pinTargetKidId; setPinTargetKidId(null); doSwitch(id) }}
+            onCancel={() => setPinTargetKidId(null)}
+          />
+        )}
+        {showJobsDoneModal && jobsDoneKid && (
+          <JobsDoneModal
+            key="jobs-done"
+            kid={jobsDoneKid}
+            onClose={() => { setShowJobsDoneModal(false); setJobsDoneKidId(null) }}
+          />
+        )}
         {showDayModal && (
           <DayCompleteModal
             key="day"
@@ -281,6 +358,32 @@ export default function App({ state, toggle, markDayComplete, markWheelSpun, ref
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+function ChoreSection({ label }) {
+  return (
+    <div className="flex items-center gap-3 mt-2 mb-1">
+      <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.15)' }} />
+      <span className="text-white/50 text-xs font-black uppercase tracking-widest">{label}</span>
+      <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.15)' }} />
+    </div>
+  )
+}
+
+function ChoreRow({ chore, i, kidChecked, kidId, handleToggle }) {
+  return (
+    <motion.div
+      initial={{ x: -30, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ delay: i * 0.05, type: 'spring', stiffness: 400 }}
+    >
+      <ChoreItem
+        chore={chore}
+        checked={kidChecked.has(chore.id)}
+        onToggle={() => handleToggle(kidId, chore.id)}
+      />
+    </motion.div>
   )
 }
 

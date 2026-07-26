@@ -9,7 +9,7 @@ async function req(path, opts = {}) {
 }
 
 export const getState         = () => req('/api/state')
-export const toggleChore      = (kidId, choreId) => req('/api/toggle',       { method: 'POST', body: JSON.stringify({ kidId, choreId }) })
+export const toggleChore      = (kidId, choreId, checkSlot) => req('/api/toggle', { method: 'POST', body: JSON.stringify({ kidId, choreId, checkSlot }) })
 export const markDayComplete  = (dayKey)          => req('/api/day-complete', { method: 'POST', body: JSON.stringify({ dayKey }) })
 export const markWheelSpun    = ()                => req('/api/wheel-spun',   { method: 'POST', body: JSON.stringify({}) })
 export const resetDay         = ()                => req('/api/day-reset',    { method: 'POST', body: JSON.stringify({}) })

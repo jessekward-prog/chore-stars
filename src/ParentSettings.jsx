@@ -102,13 +102,13 @@ function KidsTab({ kids, onRefresh }) {
   const startEdit = (kid) => {
     setAdding(false)
     setEditing(kid.id)
-    setForm({ name: kid.name, colorFrom: kid.color_from, colorTo: kid.color_to, tabFrom: kid.tab_from, tabTo: kid.tab_to })
+    setForm({ name: kid.name, colorFrom: kid.color_from, colorTo: kid.color_to, tabFrom: kid.tab_from, tabTo: kid.tab_to, bgColor: kid.bg_color || '#0f0524', pin: kid.pin || '' })
   }
 
   const startAdd = () => {
     setEditing(null)
     setAdding(true)
-    setForm({ name: '', colorFrom: '#f472b6', colorTo: '#a855f7', tabFrom: '#e879f9', tabTo: '#9333ea' })
+    setForm({ name: '', colorFrom: '#f472b6', colorTo: '#a855f7', tabFrom: '#e879f9', tabTo: '#9333ea', bgColor: '#0f0524', pin: '' })
   }
 
   const cancel = () => { setEditing(null); setAdding(false) }
@@ -175,7 +175,11 @@ function KidsTab({ kids, onRefresh }) {
                   <ColorRow label="Card to"       value={form.colorTo}   onChange={v => setForm(f => ({ ...f, colorTo: v }))} />
                   <ColorRow label="Tab from"      value={form.tabFrom}   onChange={v => setForm(f => ({ ...f, tabFrom: v }))} />
                   <ColorRow label="Tab to"        value={form.tabTo}     onChange={v => setForm(f => ({ ...f, tabTo: v }))} />
+                  <ColorRow label="Background"    value={form.bgColor}   onChange={v => setForm(f => ({ ...f, bgColor: v }))} />
                 </div>
+                <Input label="Tab PIN (4 digits, optional)" value={form.pin}
+                  onChange={v => { if (/^\d{0,4}$/.test(v)) setForm(f => ({ ...f, pin: v })) }}
+                  placeholder="Leave blank for no PIN" />
                 <div className="flex gap-2 mt-2">
                   <Btn onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save'}</Btn>
                   <Btn onClick={cancel}>Cancel</Btn>
@@ -195,7 +199,11 @@ function KidsTab({ kids, onRefresh }) {
             <ColorRow label="Card to"   value={form.colorTo}   onChange={v => setForm(f => ({ ...f, colorTo: v }))} />
             <ColorRow label="Tab from"  value={form.tabFrom}   onChange={v => setForm(f => ({ ...f, tabFrom: v }))} />
             <ColorRow label="Tab to"    value={form.tabTo}     onChange={v => setForm(f => ({ ...f, tabTo: v }))} />
+            <ColorRow label="Background" value={form.bgColor}  onChange={v => setForm(f => ({ ...f, bgColor: v }))} />
           </div>
+          <Input label="Tab PIN (4 digits, optional)" value={form.pin}
+            onChange={v => { if (/^\d{0,4}$/.test(v)) setForm(f => ({ ...f, pin: v })) }}
+            placeholder="Leave blank for no PIN" />
           <div className="flex gap-2 mt-2">
             <Btn onClick={save} disabled={saving || !form.name?.trim()}>{saving ? 'Adding...' : 'Add Kid'}</Btn>
             <Btn onClick={cancel}>Cancel</Btn>
@@ -215,11 +223,11 @@ function ChoresTab({ chores, onRefresh }) {
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
 
-  const EMPTY = { emoji: '⭐', label: '', colorFrom: '#facc15', colorTo: '#f97316', checkedFrom: '#b45309', checkedTo: '#c2410c', checkColor: '#ea580c' }
+  const EMPTY = { emoji: '⭐', label: '', colorFrom: '#facc15', colorTo: '#f97316', checkedFrom: '#b45309', checkedTo: '#c2410c', checkColor: '#ea580c', timeOfDay: 'both' }
 
   const startEdit = (c) => {
     setAdding(false); setEditing(c.id)
-    setForm({ emoji: c.emoji, label: c.label, colorFrom: c.color_from, colorTo: c.color_to, checkedFrom: c.checked_from, checkedTo: c.checked_to, checkColor: c.check_color, active: c.active })
+    setForm({ emoji: c.emoji, label: c.label, colorFrom: c.color_from, colorTo: c.color_to, checkedFrom: c.checked_from, checkedTo: c.checked_to, checkColor: c.check_color, active: c.active, timeOfDay: c.time_of_day || 'both' })
   }
   const startAdd = () => { setEditing(null); setAdding(true); setForm(EMPTY) }
   const cancel = () => { setEditing(null); setAdding(false) }
@@ -240,7 +248,7 @@ function ChoresTab({ chores, onRefresh }) {
   }
 
   const toggleActive = async (c) => {
-    await api.updateChore(c.id, { emoji: c.emoji, label: c.label, colorFrom: c.color_from, colorTo: c.color_to, checkedFrom: c.checked_from, checkedTo: c.checked_to, checkColor: c.check_color, active: !c.active })
+    await api.updateChore(c.id, { emoji: c.emoji, label: c.label, colorFrom: c.color_from, colorTo: c.color_to, checkedFrom: c.checked_from, checkedTo: c.checked_to, checkColor: c.check_color, active: !c.active, timeOfDay: c.time_of_day || 'both' })
     onRefresh()
   }
 
@@ -254,6 +262,29 @@ function ChoresTab({ chores, onRefresh }) {
           <Input label="Label" value={form.label} onChange={v => setForm(f => ({ ...f, label: v }))} placeholder="Chore name..." />
         </div>
       </div>
+      <div className="mb-4">
+        <div className="text-white/50 text-xs font-black uppercase tracking-wider mb-2">When does this chore appear?</div>
+        <div className="flex gap-2">
+          {[
+            { v: 'morning', icon: '🌅', label: 'Morning', sub: 'Before noon' },
+            { v: 'evening', icon: '🌙', label: 'Evening', sub: 'After noon' },
+            { v: 'both',    icon: '☀️', label: 'All Day', sub: 'Always' },
+          ].map(({ v, icon, label, sub }) => (
+            <button key={v} type="button" onClick={() => setForm(f => ({ ...f, timeOfDay: v }))}
+              className="flex-1 py-3 px-2 rounded-2xl flex flex-col items-center gap-1"
+              style={{
+                background: form.timeOfDay === v ? 'rgba(139,92,246,0.55)' : 'rgba(255,255,255,0.1)',
+                border: `2px solid ${form.timeOfDay === v ? '#8b5cf6' : 'rgba(255,255,255,0.2)'}`,
+                color: 'white',
+              }}
+            >
+              <span className="text-2xl">{icon}</span>
+              <span className="text-sm font-black" style={{ fontFamily: "'Fredoka One', cursive" }}>{label}</span>
+              <span className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{sub}</span>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="grid grid-cols-2 gap-x-4">
         <ColorRow label="Normal from"  value={form.colorFrom}   onChange={v => setForm(f => ({ ...f, colorFrom: v }))} />
         <ColorRow label="Normal to"    value={form.colorTo}     onChange={v => setForm(f => ({ ...f, colorTo: v }))} />
@@ -264,40 +295,73 @@ function ChoresTab({ chores, onRefresh }) {
     </>
   )
 
+  const ChoreCard = (c) => (
+    <div key={c.id} style={{ ...CARD, opacity: c.active ? 1 : 0.5 }}>
+      <div className="flex items-center gap-3 mb-1">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+          style={{ background: `linear-gradient(135deg, ${c.color_from}, ${c.color_to})` }}>
+          {c.emoji}
+        </div>
+        <div className="flex-1">
+          <div className="text-white font-black">{c.label}</div>
+        </div>
+        <div className="flex gap-2">
+          <Btn small onClick={() => toggleActive(c)}>{c.active ? 'Hide' : 'Show'}</Btn>
+          <Btn small onClick={() => startEdit(c)}>Edit</Btn>
+          <Btn small danger onClick={() => del(c.id)}>Del</Btn>
+        </div>
+      </div>
+      {editing === c.id && (
+        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}>
+          {ChoreForm()}
+          <div className="flex gap-2 mt-2">
+            <Btn onClick={save} disabled={saving || !form.label?.trim()}>{saving ? 'Saving...' : 'Save'}</Btn>
+            <Btn onClick={cancel}>Cancel</Btn>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  )
+
+  const morningChores = chores.filter(c => c.time_of_day === 'morning')
+  const eveningChores = chores.filter(c => c.time_of_day === 'evening')
+  const bothChores    = chores.filter(c => !c.time_of_day || c.time_of_day === 'both')
+
+  const SectionHead = ({ label }) => (
+    <div className="flex items-center gap-3 mt-4 mb-2">
+      <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.15)' }} />
+      <span className="text-white/60 text-sm font-black uppercase tracking-widest">{label}</span>
+      <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.15)' }} />
+    </div>
+  )
+
+  const EmptySlot = ({ label }) => (
+    <div className="text-white/20 text-xs text-center py-3 italic">
+      No {label} chores yet — edit a chore above and set it to {label}
+    </div>
+  )
+
   return (
     <div>
       <div className="flex flex-col gap-3 mb-4">
-        {chores.map(c => (
-          <div key={c.id} style={{ ...CARD, opacity: c.active ? 1 : 0.5 }}>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                style={{ background: `linear-gradient(135deg, ${c.color_from}, ${c.color_to})` }}>
-                {c.emoji}
-              </div>
-              <div className="flex-1 text-white font-black">{c.label}</div>
-              <div className="flex gap-2">
-                <Btn small onClick={() => toggleActive(c)}>{c.active ? 'Hide' : 'Show'}</Btn>
-                <Btn small onClick={() => startEdit(c)}>Edit</Btn>
-                <Btn small danger onClick={() => del(c.id)}>Del</Btn>
-              </div>
-            </div>
-            {editing === c.id && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}>
-                <ChoreForm />
-                <div className="flex gap-2 mt-2">
-                  <Btn onClick={save} disabled={saving || !form.label?.trim()}>{saving ? 'Saving...' : 'Save'}</Btn>
-                  <Btn onClick={cancel}>Cancel</Btn>
-                </div>
-              </motion.div>
-            )}
-          </div>
-        ))}
+        <SectionHead label="🌅 Morning" />
+        {morningChores.length === 0
+          ? <EmptySlot label="Morning" />
+          : morningChores.map(c => ChoreCard(c))}
+
+        <SectionHead label="🌙 Evening" />
+        {eveningChores.length === 0
+          ? <EmptySlot label="Evening" />
+          : eveningChores.map(c => ChoreCard(c))}
+
+        {bothChores.length > 0 && <SectionHead label="☀️ All Day" />}
+        {bothChores.map(c => ChoreCard(c))}
       </div>
 
       {adding && (
         <div style={CARD} className="mb-4">
           <div className="text-white font-black mb-3">New Chore</div>
-          <ChoreForm />
+          {ChoreForm()}
           <div className="flex gap-2 mt-2">
             <Btn onClick={save} disabled={saving || !form.label?.trim()}>{saving ? 'Adding...' : 'Add Chore'}</Btn>
             <Btn onClick={cancel}>Cancel</Btn>

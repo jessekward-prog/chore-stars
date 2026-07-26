@@ -19,6 +19,18 @@ export function fireChoreConfetti(x, y) {
   })
 }
 
+export function fireKidDoneConfetti() {
+  confetti({
+    particleCount: 90,
+    spread: 100,
+    origin: { x: 0.5, y: 0.45 },
+    colors: COLORS,
+    shapes: ['star', 'circle'],
+    gravity: 0.85,
+    scalar: 1.3,
+  })
+}
+
 export function fireAllDoneConfetti() {
   // Big burst from both sides
   confetti({ particleCount: 100, angle: 60,  spread: 65, origin: { x: 0, y: 0.55 }, colors: COLORS, shapes: ['star','circle'], gravity: 0.85, scalar: 1.6 })

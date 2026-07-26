@@ -28,7 +28,7 @@ export default function ChoreItem({ chore, checked, onToggle }) {
   }
 
   const bgStyle = checked
-    ? { background: `linear-gradient(to right, ${chore.checked_from}, ${chore.checked_to})` }
+    ? { background: 'rgba(255,255,255,0.08)' }
     : { background: `linear-gradient(to right, ${chore.color_from}, ${chore.color_to})` }
 
   return (
@@ -36,11 +36,12 @@ export default function ChoreItem({ chore, checked, onToggle }) {
       <motion.button
         ref={btnRef}
         onClick={handleClick}
-        className="w-full flex items-center gap-4 px-5 py-4 rounded-3xl font-nunito font-black text-xl shadow-lg border-4 relative overflow-hidden"
+        className="w-full flex items-center gap-4 px-5 py-4 rounded-3xl font-nunito font-black text-xl border-4 relative overflow-hidden"
         style={{
           ...bgStyle,
-          borderColor: checked ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.6)',
-          opacity: checked ? 0.85 : 1,
+          borderColor: checked ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
+          opacity: checked ? 0.55 : 1,
+          boxShadow: '0 6px 24px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2)',
           WebkitTapHighlightColor: 'transparent',
         }}
         whileTap={{ scale: 0.93 }}
@@ -63,7 +64,10 @@ export default function ChoreItem({ chore, checked, onToggle }) {
           {chore.emoji}
         </motion.span>
 
-        <span className="flex-1 text-left text-white drop-shadow-md relative z-10 tracking-wide">
+        <span
+          className="flex-1 text-left text-white drop-shadow-md relative z-10 tracking-wide"
+          style={{ textDecoration: checked ? 'line-through' : 'none', textDecorationColor: 'rgba(255,255,255,0.6)' }}
+        >
           {chore.label}
         </span>
 

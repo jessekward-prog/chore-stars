@@ -55,3 +55,17 @@ CREATE TABLE IF NOT EXISTS wheel_spins (
   week_start DATE NOT NULL UNIQUE,
   spun_at TIMESTAMP DEFAULT NOW()
 );
+
+ALTER TABLE kids ADD COLUMN IF NOT EXISTS bg_color TEXT NOT NULL DEFAULT '#0f0524';
+ALTER TABLE kids ADD COLUMN IF NOT EXISTS pin TEXT;
+ALTER TABLE chores ADD COLUMN IF NOT EXISTS time_of_day TEXT NOT NULL DEFAULT 'both';
+ALTER TABLE daily_checks ADD COLUMN IF NOT EXISTS check_slot TEXT NOT NULL DEFAULT 'both';
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'daily_checks_kid_id_chore_id_check_date_key' AND conrelid = 'daily_checks'::regclass) THEN
+    ALTER TABLE daily_checks DROP CONSTRAINT daily_checks_kid_id_chore_id_check_date_key;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'daily_checks_slot_unique' AND conrelid = 'daily_checks'::regclass) THEN
+    ALTER TABLE daily_checks ADD CONSTRAINT daily_checks_slot_unique UNIQUE(kid_id, chore_id, check_date, check_slot);
+  END IF;
+END $$;

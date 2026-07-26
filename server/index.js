@@ -53,6 +53,10 @@ async function initDB() {
   }
 }
 
+function getServerTimeSlot() {
+  return new Date().getHours() < 12 ? 'morning' : 'evening'
+}
+
 function getWeekStart() {
   const d = new Date()
   const day = d.getDay()
@@ -141,7 +145,7 @@ app.get('/api/state', async (req, res) => {
       pool.query('SELECT * FROM kids ORDER BY sort_order, id'),
       pool.query('SELECT * FROM chores WHERE active = TRUE ORDER BY sort_order, id'),
       pool.query('SELECT * FROM prizes ORDER BY sort_order, id'),
-      pool.query('SELECT kid_id, chore_id FROM daily_checks WHERE check_date = $1', [today]),
+      pool.query('SELECT kid_id, chore_id FROM daily_checks WHERE check_date = $1 AND (check_slot = $2 OR check_slot = \'both\')', [today, getServerTimeSlot()]),
       pool.query('SELECT day_key FROM completed_days WHERE week_start = $1', [weekStart]),
       pool.query('SELECT id FROM wheel_spins WHERE week_start = $1', [weekStart]),
       pool.query("SELECT value FROM settings WHERE key = 'setup_complete'"),
@@ -169,21 +173,22 @@ app.get('/api/state', async (req, res) => {
 // ── Chore toggle ──────────────────────────────────────────────────────────────
 app.post('/api/toggle', async (req, res) => {
   try {
-    const { kidId, choreId } = req.body
+    const { kidId, choreId, checkSlot } = req.body
+    const slot = checkSlot || 'both'
     const today = new Date().toISOString().split('T')[0]
     const { rows } = await pool.query(
-      'SELECT id FROM daily_checks WHERE kid_id=$1 AND chore_id=$2 AND check_date=$3',
-      [kidId, choreId, today]
+      'SELECT id FROM daily_checks WHERE kid_id=$1 AND chore_id=$2 AND check_date=$3 AND check_slot=$4',
+      [kidId, choreId, today, slot]
     )
     if (rows.length > 0) {
       await pool.query(
-        'DELETE FROM daily_checks WHERE kid_id=$1 AND chore_id=$2 AND check_date=$3',
-        [kidId, choreId, today]
+        'DELETE FROM daily_checks WHERE kid_id=$1 AND chore_id=$2 AND check_date=$3 AND check_slot=$4',
+        [kidId, choreId, today, slot]
       )
     } else {
       await pool.query(
-        'INSERT INTO daily_checks (kid_id, chore_id, check_date) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
-        [kidId, choreId, today]
+        'INSERT INTO daily_checks (kid_id, chore_id, check_date, check_slot) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+        [kidId, choreId, today, slot]
       )
     }
     res.json({ ok: true })
@@ -230,11 +235,11 @@ app.get('/api/kids', async (req, res) => {
 
 app.post('/api/kids', requireParent, async (req, res) => {
   try {
-    const { name, colorFrom, colorTo, tabFrom, tabTo } = req.body
+    const { name, colorFrom, colorTo, tabFrom, tabTo, bgColor, pin } = req.body
     const { rows: [{ max }] } = await pool.query('SELECT MAX(sort_order) AS max FROM kids')
     const { rows } = await pool.query(
-      'INSERT INTO kids (name, color_from, color_to, tab_from, tab_to, sort_order) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
-      [name, colorFrom || '#f472b6', colorTo || '#a855f7', tabFrom || '#e879f9', tabTo || '#9333ea', (max ?? -1) + 1]
+      'INSERT INTO kids (name, color_from, color_to, tab_from, tab_to, bg_color, pin, sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
+      [name, colorFrom || '#f472b6', colorTo || '#a855f7', tabFrom || '#e879f9', tabTo || '#9333ea', bgColor || '#0f0524', pin || null, (max ?? -1) + 1]
     )
     res.json(rows[0])
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -242,10 +247,10 @@ app.post('/api/kids', requireParent, async (req, res) => {
 
 app.put('/api/kids/:id', requireParent, async (req, res) => {
   try {
-    const { name, colorFrom, colorTo, tabFrom, tabTo } = req.body
+    const { name, colorFrom, colorTo, tabFrom, tabTo, bgColor, pin } = req.body
     const { rows } = await pool.query(
-      'UPDATE kids SET name=$1, color_from=$2, color_to=$3, tab_from=$4, tab_to=$5 WHERE id=$6 RETURNING *',
-      [name, colorFrom, colorTo, tabFrom, tabTo, req.params.id]
+      'UPDATE kids SET name=$1, color_from=$2, color_to=$3, tab_from=$4, tab_to=$5, bg_color=$6, pin=$7 WHERE id=$8 RETURNING *',
+      [name, colorFrom, colorTo, tabFrom, tabTo, bgColor || '#0f0524', pin || null, req.params.id]
     )
     res.json(rows[0])
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -277,13 +282,14 @@ app.get('/api/chores', async (req, res) => {
 
 app.post('/api/chores', requireParent, async (req, res) => {
   try {
-    const { emoji, label, colorFrom, colorTo, checkedFrom, checkedTo, checkColor } = req.body
+    const { emoji, label, colorFrom, colorTo, checkedFrom, checkedTo, checkColor, timeOfDay } = req.body
     const { rows: [{ max }] } = await pool.query('SELECT MAX(sort_order) AS max FROM chores')
     const { rows } = await pool.query(
-      `INSERT INTO chores (emoji, label, color_from, color_to, checked_from, checked_to, check_color, sort_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      `INSERT INTO chores (emoji, label, color_from, color_to, checked_from, checked_to, check_color, time_of_day, sort_order)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
       [emoji || '⭐', label, colorFrom || '#facc15', colorTo || '#f97316',
-       checkedFrom || '#b45309', checkedTo || '#c2410c', checkColor || '#ea580c', (max ?? -1) + 1]
+       checkedFrom || '#b45309', checkedTo || '#c2410c', checkColor || '#ea580c',
+       timeOfDay || 'both', (max ?? -1) + 1]
     )
     res.json(rows[0])
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -291,11 +297,11 @@ app.post('/api/chores', requireParent, async (req, res) => {
 
 app.put('/api/chores/:id', requireParent, async (req, res) => {
   try {
-    const { emoji, label, colorFrom, colorTo, checkedFrom, checkedTo, checkColor, active } = req.body
+    const { emoji, label, colorFrom, colorTo, checkedFrom, checkedTo, checkColor, active, timeOfDay } = req.body
     const { rows } = await pool.query(
       `UPDATE chores SET emoji=$1, label=$2, color_from=$3, color_to=$4,
-       checked_from=$5, checked_to=$6, check_color=$7, active=$8 WHERE id=$9 RETURNING *`,
-      [emoji, label, colorFrom, colorTo, checkedFrom, checkedTo, checkColor, active, req.params.id]
+       checked_from=$5, checked_to=$6, check_color=$7, active=$8, time_of_day=$9 WHERE id=$10 RETURNING *`,
+      [emoji, label, colorFrom, colorTo, checkedFrom, checkedTo, checkColor, active, timeOfDay || 'both', req.params.id]
     )
     res.json(rows[0])
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -336,9 +342,20 @@ app.post('/api/setup/complete', async (req, res) => {
 })
 
 // ── SPA fallback ──────────────────────────────────────────────────────────────
-app.use(express.static(join(__dirname, '..', 'dist')))
+// Assets get long-lived cache (filenames include content hash); HTML never cached
+app.use('/assets', express.static(join(__dirname, '..', 'dist', 'assets'), {
+  maxAge: '1y', immutable: true,
+}))
+app.use(express.static(join(__dirname, '..', 'dist'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    }
+  },
+}))
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' })
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate')
   res.sendFile(join(__dirname, '..', 'dist', 'index.html'))
 })
 
